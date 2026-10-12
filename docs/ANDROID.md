@@ -2,7 +2,7 @@
 
 Pinned build: JDK 17, Gradle 8.11.1, AGP 8.9.2, Kotlin/Compose compiler 2.1.20, SDK 35, min SDK 26. CI installs Gradle explicitly; repository does not carry a Gradle wrapper JAR. Build: `gradle :app:assembleDebug :app:lintDebug` from android/.
 
-The five-tab Compose client uses TLS and memory-only sessions. Some large numeric values are displayed as exact backend decimal strings. This release is functional source, pending full real-device visual/accessibility/performance QA. Android UI smoke test covers offline sign-in inputs, not a full backend-backed navigation test. There is no claim that all requested futures screens are finished.
+The five-tab Compose client uses TLS and Android Keystore encrypted sessions. Some large numeric values are displayed as exact backend decimal strings. This release is functional source, pending full real-device visual/accessibility/performance QA. Android UI smoke test covers offline sign-in inputs, not a full backend-backed navigation test. There is no claim that all requested futures screens are finished.
 
 ## Owner-managed release signing
 

@@ -1,71 +1,55 @@
-# ZEN — Autonomous Crypto Trading Intelligence
+# ZEN — private trading research workspace
 
-Native Android client and persistent Python **paper spot trading foundation**. This is an engineering release, not the completed live futures product. No guaranteed returns. The $25/day objective is aspirational; $200 is explicitly simulated paper equity, not a deposited balance.
+Native Android application with a persistent Railway backend, real public crypto market data, a transactional paper trading ledger and independent risk controls.
 
-## Implemented
+**Release 0.2 runs paper spot trading. Live spot/futures execution remains locked.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
 
-- FastAPI owner authentication, revocable sessions, optional one-time owner setup, encrypted read-only exchange credentials.
-- PostgreSQL ledger with row-locked capital mutations and per-owner unique order IDs. SQLite only for local unit tests/development.
-- Independent risk governor; paper fills, fees, marked portfolio, partial reductions, backend-monitored paper TP/SL, emergency stop of new exposure.
-- Background market observer, Binance public book WebSocket, CCXT REST reads and reconnects; worker leadership lock.
-- Research-only regime/trend pipeline returning WAIT until execution strategies are validated. No fabricated confidence.
-- Cost-aware historical evaluation and chronological out-of-sample folds; promotion predicate. No automatic strategy mutation.
-- Kotlin/Compose Android client: Home, Markets, Agent, Positions, Settings; real backend requests, candlestick view, owner setup, paper order testing, confirmation dialogs, risk controls, encrypted connection setup, audit export.
-- GitHub Actions APK, backend CI/PostgreSQL concurrency test, dependency/secret scanning and optional Android UI test.
+## Install from your Android phone
 
-## Not implemented/certified
+1. Install the delivered ZEN Premium debug APK, or download the successful **Build Android APK** workflow artifact from GitHub Actions.
+2. Open ZEN. The production backend address is already configured.
+3. Select **First time? Create workspace**, enter your own email and a password of at least 12 characters, then paste your private setup code from the owner setup note delivered separately.
+4. Sign-in happens automatically after account creation. The code cannot create another owner once an account exists.
+5. Explore Markets, open a chart, and use **Create paper order** to exercise your own plan. The independent risk governor can reject a proposal.
+6. Positions → Manage position supports protective exits, partial reductions and full close. Agent pause/resume controls new paper exposure. Emergency stop is in the header.
+7. Exchange connections are optional for paper mode. Use only read-only keys with trading, transfers and withdrawals disabled. Private account access depends on exchange APIs, permissions and region.
 
-Live spot or futures execution, native private streams/TP-SL, shorting, leverage, hedge mode, cross margin, orderbook/trade/OI ingestion, LLM research service, automatic training/promotion/rollback, calibrated opportunity models, notifications and complete production hardening. Live activation always returns HTTP 409. Read-only key permission flags cannot be independently verified through every exchange; permission attestation is not certification.
+Debug APKs are personal test builds. GitHub and local builds can have different debug signing keys; if Android rejects an update because the signatures differ, remove the previous test app before installing. Server-side account and history remain in PostgreSQL, but the local session is removed.
 
-The interface only shows controls supported by this release. See [validation report](docs/VALIDATION.md) and [architecture](docs/ARCHITECTURE.md) for evidence and gaps.
+## Deployed backend
 
-## Run backend
+HTTPS API: `https://zen-api-production-8459.up.railway.app`
 
-Python 3.12+, PostgreSQL 16+.
+Railway has separate PostgreSQL, API and worker services in the selected Zain connection. The worker continues observing markets and monitoring paper exits when Android is closed. Application sleeping is disabled, subject to hosting account limits and outages. Hosting is metered; continuous execution is not guaranteed free.
+
+The selected Railway account cannot access this repository directly. Deployment therefore uses the official public Python image with a **commit-pinned, SHA-256 verified source archive**. Hosting variables `SOURCE_COMMIT` and `SOURCE_SHA256` select the release. A mutable branch is never executed. Dependencies install at startup, so restart recovery can take longer than a prebuilt image; production container publishing is future deployment work. Database and credentials remain outside the container filesystem.
+
+API health: `/health`. OpenAPI: `/openapi.json`. Authenticated APIs are protected by owner sessions. No real exchange order was sent during verification.
+
+## Premium Android experience
+
+Five native Compose tabs: Home, Markets, Agent, Positions, Settings. Restrained near-black surfaces, emerald/blue accents, legible decimal values, meaningful status states and guided forms. Features include real candle charts, order-book snapshots, watchlist, readable research decisions, risk editing, position reductions, confirmation dialogs, audit export and account sign-out.
+
+Bearer sessions are encrypted with an Android Keystore AES-GCM key. Passwords and exchange secrets are not saved on the phone. Saved exchange credentials are encrypted server-side and never returned to the client.
+
+## Research and execution boundary
+
+The current research pipeline describes market structure and can conclude WAIT. No execution strategy has been promoted; descriptive signals and uncalibrated confidence are not treated as a trading edge. Automatic strategy training/promotion/rollback and full futures execution are unfinished. The tested historical baseline lost money after costs and was kept research-only.
+
+Paper orders use fresh public bid/ask quotes, conservative modeled fees/slippage, account row locks and unique client IDs. Paper TP/SL runs on the worker; it is not an exchange-native protective order. Gaps or disconnections can exceed a planned loss. Private exchange keys and live sandbox orders have not been validated in this session.
+
+## Validation and development
+
+See [release evidence](docs/RELEASE-0.2.md) and [cloud end-to-end results](docs/DEPLOYMENT-E2E.json). Synthetic prices used for Android instrumentation exist only in the test APK; the production client has no demo balance or price feed.
 
 ```sh
 pip install -r requirements.txt
-export DATABASE_URL='postgresql+psycopg://...'
-python -m alembic -c database/alembic.ini upgrade head
+python -m pytest -q
+# PostgreSQL concurrency/migration checks are also run in GitHub CI.
+python -m backend.manage init-dev
 python -m backend.manage create-owner --email owner@example.com
 python -m uvicorn backend.api:app --host 0.0.0.0 --port 8080
-# Separate terminal/container; continues when Android closes:
 python -m backend.worker
 ```
 
-For local isolated development: `python -m backend.manage init-dev` creates SQLite. Do not deploy SQLite across API/worker replicas.
-
-Docker: copy `.env.example` to a private `.env`, configure secrets, run `docker compose --env-file .env -f infra/compose.yml up --build`. Host API behind TLS. The worker must start after migrations; if it races, restart worker. API docs are `/docs`, contract `/openapi.json`.
-
-## Phone-only installation
-
-1. Open this repository in GitHub on your phone, select **Actions → Build Android APK**.
-2. Select **Run workflow → main**. Wait for a green run; failed builds do not produce a validated APK.
-3. Open run → **Artifacts → ZEN-debug-APK**, download ZIP and extract `app-debug.apk`.
-4. Install APK and permit installation from your download manager when Android requests it.
-5. Enter your deployed **HTTPS API URL**, owner email and password. No API secret is embedded in the APK.
-6. Use Settings to set paper risk limits. Agent Resume enables paper exposure; research currently stays WAIT. Use Markets paper test order to exercise the ledger.
-
-A debug APK is for personal testing, not Play Store release. See [release signing](docs/ANDROID.md). Backend hosting is separate and must remain running; Android is a control surface, not the trading runtime.
-
-## Railway
-
-Provision a separate PostgreSQL, API and worker. API and worker use the same `DATABASE_URL` (SQLAlchemy `postgresql+psycopg` driver); only API receives `CREDENTIAL_MASTER_KEY`. API uses `infra/Dockerfile`, `/health`; worker uses the same image with `python -m backend.worker`, no HTTP healthcheck. Disable application sleeping, run one worker, and use private database networking. Public API must use Railway HTTPS domain. Railway free/trial limits can prevent service creation; continuous execution is not guaranteed free.
-
-For phone-only first-owner setup, set a random 32+ character `BOOTSTRAP_TOKEN` in **API hosting variables**. In Android select Create owner account, enter that token and your own 12+ character password, then remove the hosting token after successful setup. Never put passwords or setup tokens into GitHub or public issue comments.
-
-## Verify
-
-```sh
-python -m pytest -q
-TEST_POSTGRES_URL='postgresql+psycopg://...' python -m pytest -q tests/test_postgres.py
-python -m research.run probe --output docs/exchange-public-tests.json
-python -m research.run history --exchange kraken --output docs/historical-evaluation.json
-```
-
-Public market probes do not validate private keys, regional eligibility or live execution. Test fixtures are synthetic and confined to tests; UI has no demo prices.
-
-## GitHub-only temporary backend testing
-
-A Codespaces configuration is included. From Android, select Code → Codespaces → Create codespace on main. PostgreSQL, API and paper worker start through Docker Compose. See [phone-only setup and limitations](docs/CODESPACES.md). This does not provide continuous production trading hosting.
-
+Use PostgreSQL for deployment. Local SQLite is for isolated tests/development. Docker Compose setup is in `infra/compose.yml`; Codespaces testing is documented in [CODESPACES.md](docs/CODESPACES.md). Keep `.env`, setup codes, API keys and signing keystores out of source control.

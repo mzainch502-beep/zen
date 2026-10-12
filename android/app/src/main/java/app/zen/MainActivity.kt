@@ -165,6 +165,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
         item {SurfaceCard {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {Eyebrow("Paper equity");Text("USDT",style=MaterialTheme.typography.labelSmall,color=ZenColors.Muted)}
             Text(money(p.value("equity")),style=MaterialTheme.typography.displaySmall)
+            if(!c.connected) Text("Last known values · reconnecting",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 Text(signedMoney(p.value("net_pnl")),color=pnlColor(p.value("net_pnl")),fontFamily=FontFamily.Monospace,style=MaterialTheme.typography.titleMedium)
                 Text("since start",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)

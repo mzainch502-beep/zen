@@ -39,7 +39,7 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
 
     private fun failure(e: Exception) {
         error = e.message ?: "Connection failed. Please retry."
-        connected = false
+        connected = e is ApiFailure && e.code in 400..499 && e.code!=401
         if (e is ApiFailure && e.code == 401) { authorized = false; repository.clearSession(); snapshot = JSONObject(); markets = JSONArray() }
     }
     private suspend fun refreshData() = refreshLock.withLock {

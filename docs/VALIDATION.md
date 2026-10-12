@@ -1,3 +1,7 @@
+# Historical release 0.1 report
+
+This report is archived evidence. The deployed and redesigned release is described in [RELEASE-0.2.md](RELEASE-0.2.md).
+
 # Validation evidence — 2026-10-12
 
 ## Scope

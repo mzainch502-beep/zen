@@ -71,7 +71,7 @@ class Api(context: Context? = null) : ZenRepository {
                 if (response.code == 401) clearSession()
                 val detail = runCatching { JSONObject(text).optString("detail") }.getOrDefault("Request failed")
                 throw ApiFailure(response.code, when(response.code) {
-                    401 -> "Your session has expired. Sign in again."
+                    401 -> if(path=="/auth/login") "The email or password did not match. Please retry." else "Your session has expired. Sign in again."
                     502, 503 -> "This service is temporarily unavailable. Please retry."
                     else -> detail.ifBlank { "Request failed (${response.code})" }
                 })

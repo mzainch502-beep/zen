@@ -1,0 +1,33 @@
+{
+  "checked_at": 1791780410.618523,
+  "backend": "https://zen-api-production-8459.up.railway.app",
+  "health": {
+    "status": "ok",
+    "live_execution": false,
+    "worker_online": true
+  },
+  "market_symbols": [
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT"
+  ],
+  "checks": [
+    "owner setup",
+    "sign in",
+    "authenticated snapshot",
+    "real quotes",
+    "mode change",
+    "risk-approved paper buy",
+    "duplicate prevention",
+    "reduce-only close",
+    "fee accounting",
+    "real order book",
+    "real candles",
+    "live lock",
+    "logout revocation"
+  ],
+  "real_exchange_orders_sent": 0,
+  "private_keys_tested": false,
+  "disposable_owner_pending_cleanup": false,
+  "owner_workspace_ready": true
+}

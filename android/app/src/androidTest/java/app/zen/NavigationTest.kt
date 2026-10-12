@@ -42,7 +42,9 @@ class NavigationTest {
                 .forEach {it.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)}
         }
         compose.waitForIdle()
-        val descriptor=instrumentation.uiAutomation.executeShellCommand("mkdir -p /sdcard/Download/zen-ui-qa && screencap -p /sdcard/Download/zen-ui-qa/$name.png")
+        val directory=instrumentation.uiAutomation.executeShellCommand("mkdir -p /sdcard/Download/zen-ui-qa")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(directory).use {it.readBytes()}
+        val descriptor=instrumentation.uiAutomation.executeShellCommand("screencap -p /sdcard/Download/zen-ui-qa/$name.png")
         android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).use {it.readBytes()}
     }
     @Test fun signInInputsAndConnectionSettingsWork() {
