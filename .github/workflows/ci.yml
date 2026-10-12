@@ -20,9 +20,26 @@ jobs:
         env: {DATABASE_URL: 'postgresql+psycopg://zen:test-only-password@localhost:5432/zen_test'}
       - run: python -m pytest -q --junitxml=results.xml
         env: {TEST_POSTGRES_URL: 'postgresql+psycopg://zen:test-only-password@localhost:5432/zen_test'}
+      - name: Compute verified release archive checksum
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,urllib.request
+          from pathlib import Path
+          sha=os.environ['GITHUB_SHA']
+          with urllib.request.urlopen('https://codeload.github.com/mzainch502-beep/zen/zip/'+sha,timeout=30) as response:
+              raw=response.read(20_000_001)
+          if len(raw)>20_000_000: raise ValueError('Release archive exceeds launcher limit')
+          descriptor={'SOURCE_COMMIT':sha,'SOURCE_SHA256':hashlib.sha256(raw).hexdigest()}
+          Path('release-descriptor.json').write_text(json.dumps(descriptor,indent=2))
+          print('ZEN_RELEASE_DESCRIPTOR='+json.dumps(descriptor))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
-        with: {name: validation-results, path: results.xml}
+        with:
+          name: validation-results
+          path: |
+            results.xml
+            release-descriptor.json
   security:
     runs-on: ubuntu-latest
     steps:
