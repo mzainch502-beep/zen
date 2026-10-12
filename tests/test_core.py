@@ -146,7 +146,9 @@ def test_owner_setup_one_time(tmp_path,monkeypatch):
     assert c.post('/auth/setup',json={**body,'setup_token':'incorrect-token-at-least16'}).status_code==403
     assert c.post('/auth/setup',json=body).status_code==200
     assert c.post('/auth/setup',json=body).status_code==409
-    assert c.post('/auth/login',json={'email':body['email'],'password':body['password']}).status_code==200
+    logged=c.post('/auth/login',json={'email':body['email'],'password':body['password']});assert logged.status_code==200
+    state=c.get('/snapshot',headers={'Authorization':'Bearer '+logged.json()['token']}).json()
+    assert state['portfolio']['mode']=='Paper'
 
 def test_auth_rate_limit(setup):
     db,u,c,h=setup

@@ -72,7 +72,7 @@ def create_app(database=None):
         if db.scalar(select(User).limit(1)): raise HTTPException(409,'Owner already provisioned; setup disabled')
         try: encoded=password_hash(body.password)
         except ValueError as e: raise HTTPException(422,str(e))
-        u=User(email=body.email.strip().lower(),password=encoded,limits=Limits().model_dump(mode='json'))
+        u=User(email=body.email.strip().lower(),password=encoded,mode='Paper',limits=Limits().model_dump(mode='json'))
         db.add(u);db.flush();record(db,u.id,'owner_provisioned',{});db.commit()
         return {'created':True,'notice':'Remove BOOTSTRAP_TOKEN from hosting variables now'}
     @app.post('/auth/login')
@@ -89,7 +89,7 @@ def create_app(database=None):
         return {'revoked':True}
     @app.get('/bootstrap/status')
     def bootstrap_status(db=Depends(db_dep)):
-        return {'setup_available':bool(len(os.getenv('BOOTSTRAP_TOKEN',''))>=16 and not db.scalar(select(User).limit(1))), 'live_execution':False}
+        return {'setup_available':bool(len(os.getenv('BOOTSTRAP_TOKEN',''))>=16 and not db.scalar(select(User).limit(1))), 'initial_mode':'Paper', 'live_execution':False}
     @app.get('/snapshot')
     def snapshot(u=Depends(owner),db=Depends(db_dep)):
         events=list(db.scalars(select(Record).where(Record.user_id==u.id).order_by(Record.created.desc()).limit(30)))
