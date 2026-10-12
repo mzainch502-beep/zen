@@ -66,7 +66,7 @@ def assess(rows, quote, now=None):
 
 def process_observation(db, owner, symbol, rows, now=None):
     now = time.time() if now is None else now
-    u = db.scalar(select(User).where(User.id == owner).with_for_update())
+    u = db.scalar(select(User).where(User.id == owner).with_for_update().execution_options(populate_existing=True))
     market = db.get(Market, symbol)
     if not market:
         return None
@@ -114,7 +114,7 @@ def process_observation(db, owner, symbol, rows, now=None):
 
 def manage_exits(db, owner, now=None):
     now = time.time() if now is None else now
-    db.scalar(select(User).where(User.id == owner).with_for_update())
+    db.scalar(select(User).where(User.id == owner).with_for_update().execution_options(populate_existing=True))
     entries = list(db.scalars(select(Record).where(Record.user_id == owner, Record.kind == 'autonomous_entry')))
     entry_by_order = {e.payload['order_id']: e for e in entries}
     results = []

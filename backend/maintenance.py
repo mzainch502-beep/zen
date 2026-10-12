@@ -11,7 +11,7 @@ def purge_deployment_fixture(email: str):
         raise ValueError('Refusing to remove a non-fixture account')
     db=Database()
     with db.sessions() as s:
-        u=s.scalar(select(User).where(User.email==email).with_for_update())
+        u=s.scalar(select(User).where(User.email==email).with_for_update().execution_options(populate_existing=True))
         if not u: return False
         for model in [Session,Connection,Order,Position,Record]:
             s.execute(delete(model).where(model.user_id==u.id))

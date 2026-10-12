@@ -87,3 +87,52 @@ class Database:
 
 def record(db,user_id,kind,payload):
     db.add(Record(user_id=user_id,kind=kind,payload={'schema_version':1,**payload}))
+
+class FuturesConfig(Base):
+    __tablename__='futures_config'
+    user_id: Mapped[str]=mapped_column(ForeignKey('users.id'),primary_key=True)
+    workspace: Mapped[str]=mapped_column(String(12),default='spot')
+    limits: Mapped[dict]=mapped_column(JSON,default=dict)
+    exchange_max: Mapped[bool]=mapped_column(default=False)
+    live_connection_id: Mapped[str | None]=mapped_column(String(36),nullable=True)
+    activated: Mapped[float | None]=mapped_column(Float,nullable=True)
+class FuturesPaperBook(Base):
+    __tablename__='futures_paper_books'
+    user_id: Mapped[str]=mapped_column(ForeignKey('users.id'),primary_key=True)
+    cash: Mapped[Decimal]=mapped_column(Numeric(28,12),default=Decimal('200'))
+    initial_equity: Mapped[Decimal]=mapped_column(Numeric(28,12),default=Decimal('200'))
+    high_water: Mapped[Decimal]=mapped_column(Numeric(28,12),default=Decimal('200'))
+class FuturesPaperPosition(Base):
+    __tablename__='futures_paper_positions'
+    __table_args__=(UniqueConstraint('user_id','symbol'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    user_id: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    symbol: Mapped[str]=mapped_column(String(32))
+    data: Mapped[dict]=mapped_column(JSON)
+    created: Mapped[float]=mapped_column(Float,default=time.time)
+class FuturesMarket(Base):
+    __tablename__='futures_market_data'
+    symbol: Mapped[str]=mapped_column(String(32),primary_key=True)
+    ticker: Mapped[dict]=mapped_column(JSON)
+    contract: Mapped[dict]=mapped_column(JSON)
+    received: Mapped[float]=mapped_column(Float)
+class FuturesIntent(Base):
+    __tablename__='futures_order_intents'
+    __table_args__=(UniqueConstraint('user_id','client_id'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=uid)
+    user_id: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    connection_id: Mapped[str]=mapped_column(ForeignKey('exchange_connections.id'))
+    client_id: Mapped[str]=mapped_column(String(64))
+    fingerprint: Mapped[str]=mapped_column(String(64))
+    symbol: Mapped[str]=mapped_column(String(32))
+    state: Mapped[str]=mapped_column(String(24),default='pending')
+    payload: Mapped[dict]=mapped_column(JSON)
+    receipt: Mapped[dict]=mapped_column(JSON,default=dict)
+    created: Mapped[float]=mapped_column(Float,default=time.time)
+    updated: Mapped[float]=mapped_column(Float,default=time.time)
+class FuturesAccount(Base):
+    __tablename__='futures_account_states'
+    connection_id: Mapped[str]=mapped_column(ForeignKey('exchange_connections.id'),primary_key=True)
+    user_id: Mapped[str]=mapped_column(ForeignKey('users.id'))
+    data: Mapped[dict]=mapped_column(JSON)
+    received: Mapped[float]=mapped_column(Float)

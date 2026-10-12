@@ -35,6 +35,7 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     val events get() = snapshot.optJSONArray("events") ?: JSONArray()
     val limits get() = snapshot.optJSONObject("limits") ?: JSONObject()
     val connections get() = snapshot.optJSONArray("connections") ?: JSONArray()
+    val futures get() = snapshot.optJSONObject("futures") ?: JSONObject()
     val agent get() = snapshot.optJSONObject("agent") ?: JSONObject()
 
     private fun failure(e: Exception) {
@@ -85,6 +86,18 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     }
     fun connect(exchange: String,key: String,secret: String,passphrase: String,done: ()->Unit) = action("Connection tested and saved securely.") {
         repository.call("/connections","POST",JSONObject().put("exchange",exchange).put("api_key",key.trim()).put("secret",secret.trim()).put("passphrase",if(passphrase.isBlank()) JSONObject.NULL else passphrase).put("read_only_attestation",true));done();refreshData()
+    }
+    fun saveFutures(body: JSONObject) = action("Trading controls saved.") {repository.call("/futures/settings","PUT",body);refreshData()}
+    fun seedFutures(amount: String) = action("Simulated futures capital reset.") {repository.call("/futures/paper/seed","POST",JSONObject().put("equity",amount).put("confirmation","RESET SIMULATED CAPITAL"));refreshData()}
+    fun futuresOrder(body: JSONObject) = action("Order submitted. Check the audit trail for its state.") {repository.call(if(portfolio.optBoolean("paper",true)) "/futures/paper/orders" else "/futures/live/orders","POST",body);refreshData()}
+    fun futuresClose(id: String,fraction: String,key: String) = action("Position reduction submitted.") {repository.call("/futures/positions/$id/close","POST",JSONObject().put("fraction",fraction).put("idempotency_key",key));refreshData()}
+    fun futuresExits(id: String,stop: String,take: String) = action("Paper protective exits updated.") {repository.call("/futures/positions/$id/exits","PUT",JSONObject().put("stop",stop).put("take_profit",take));refreshData()}
+    fun connectFutures(key: String,secret: String,done: ()->Unit) = action("MEXC private reads verified. Live trading still requires activation.") {
+        repository.call("/futures/connections","POST",JSONObject().put("api_key",key.trim()).put("secret",secret.trim()).put("withdrawals_disabled",true).put("trading_permission_enabled",true).put("derivatives_permitted",true));done();refreshData()
+    }
+    fun deactivateFutures() = action("Returned to simulated futures.") {repository.call("/futures/live/deactivate","POST");refreshData()}
+    fun activateFutures(id: String,phrase: String) = action("Manual live futures activated. Automated live strategies remain gated.") {
+        repository.call("/futures/live/activate","POST",JSONObject().put("connection_id",id).put("confirmation",phrase).put("acknowledge_experimental",true).put("derivatives_permitted",true));refreshData()
     }
     fun removeConnection(id: String) = action("Saved credentials removed. Revoke the key on your exchange too.") {repository.call("/connections/$id","DELETE");refreshData()}
     fun export(share: (String)->Unit) = action { share(repository.call("/audit/export")) }

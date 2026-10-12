@@ -41,6 +41,8 @@ def launch():
         from backend.maintenance import purge_deployment_fixture
         print('Deployment fixture removed:',purge_deployment_fixture(os.environ['ZEN_QA_EMAIL']),flush=True)
         return
+    if os.environ.get('ZEN_PROCESS')=='executor':
+        os.execv(sys.executable,[sys.executable,'-m','backend.futures_executor'])
     if os.environ.get('ZEN_PROCESS')=='worker':
         os.execv(sys.executable,[sys.executable,'-m','backend.worker'])
     else:

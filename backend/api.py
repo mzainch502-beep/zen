@@ -31,7 +31,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.3.0')
+    app=FastAPI(title='ZEN Paper API',version='0.4.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -60,7 +60,8 @@ def create_app(database=None):
     def health(db=Depends(db_dep)):
         db.execute(select(1))
         heartbeat=db.scalar(select(Record).where(Record.kind=='worker_heartbeat').order_by(Record.created.desc()).limit(1))
-        return {'status':'ok','live_execution':False,'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
+        executor=db.scalar(select(Record).where(Record.kind=='executor_heartbeat').order_by(Record.created.desc()).limit(1))
+        return {'status':'ok','live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
     @app.post('/auth/setup')
     def setup(body: Setup,db=Depends(db_dep)):
         login_budget()
@@ -95,20 +96,36 @@ def create_app(database=None):
         events=list(db.scalars(select(Record).where(Record.user_id==u.id).order_by(Record.created.desc()).limit(30)))
         decisions=[e for e in events if e.kind=='decision']
         latest=decisions[0].payload if decisions else {}
+        from backend.futures_paper import config, account
+        from backend.futures_live import live_snapshot
+        from backend.futures_domain import FuturesLimits
+        cfg=config(db,u.id)
+        future=live_snapshot(db,u.id) if cfg.live_connection_id and cfg.activated and cfg.workspace=='futures' else account(db,u.id) if cfg.workspace=='futures' else None
         return {'account':{'email':u.email},
             'agent':{'action':latest.get('action','WAIT'),'version':latest.get('version','research-v1'),
                      'automated_paper':True,'research_trial':True,
                      'summary':'Continuous experimental paper scanner · unvalidated strategy',
                      'reason':latest.get('reason','Collecting evidence. Execution strategies remain gated by validation.')},
-            'portfolio':portfolio(db,u),'positions':serialize_positions(db,u),
+            'portfolio':future['portfolio'] if future else portfolio(db,u),'positions':future['positions'] if future else serialize_positions(db,u),
+            'futures':{'workspace':cfg.workspace,'limits':FuturesLimits.model_validate(cfg.limits).model_dump(mode='json'),'exchange_max':cfg.exchange_max,'activated':bool(cfg.activated),'live_connection_id':cfg.live_connection_id},
             'limits':Limits.model_validate(u.limits).model_dump(mode='json'),
             'events':[{'id':e.id,'kind':e.kind,'created':e.created,'payload':e.payload} for e in events],
-            'connections':[{'id':c.id,'exchange':c.exchange,'capabilities':c.capabilities} for c in db.scalars(select(Connection).where(Connection.user_id==u.id))]}
+            'connections':[{'id':c.id,'exchange':c.exchange,'capabilities':c.capabilities} for c in db.scalars(select(Connection).where(Connection.user_id==u.id)) if not c.capabilities.get('revoked')]}
     @app.get('/markets')
     def markets(u=Depends(owner),db=Depends(db_dep)):
+        from backend.futures_paper import config
+        if config(db,u.id).workspace=='futures':
+            from database.models import FuturesMarket
+            return [{'quote':{'symbol':m.symbol,'bid':m.ticker['bid1'],'ask':m.ticker['ask1'],'last':m.ticker['lastPrice'],'timestamp':int(m.ticker['timestamp'])/1000,'source':'mexc-futures','change_percent':str(Decimal(str(m.ticker.get('riseFallRate',0)))*100)},'stale':time.time()-m.received>15,'product':'futures','contract':m.contract,'ticker':m.ticker} for m in db.scalars(select(FuturesMarket))]
         return [{'quote':m.payload,'stale':time.time()-m.received>15} for m in db.scalars(select(Market))]
     @app.get('/candles')
     async def candles(symbol: str='BTC/USDT',timeframe: str='1m',u=Depends(owner)):
+        if symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']:
+            from exchange_adapters.mexc_futures import MexcFutures
+            a=MexcFutures()
+            try:return {'symbol':symbol,'timeframe':timeframe,'candles':await a.candles(symbol,timeframe,200)}
+            except Exception:raise HTTPException(503,'Futures candles unavailable or timeframe unsupported')
+            finally:await a.close()
         if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT'] or timeframe not in ['1m','3m','5m','15m','30m','1h','4h','1d']:
             raise HTTPException(422,'Unsupported market/timeframe')
         a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
@@ -117,6 +134,12 @@ def create_app(database=None):
         finally: await a.close()
     @app.get('/market-depth')
     async def market_depth(symbol: str='BTC/USDT',u=Depends(owner)):
+        if symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']:
+            from exchange_adapters.mexc_futures import MexcFutures
+            a=MexcFutures()
+            try:return await a.depth(symbol)
+            except Exception:raise HTTPException(503,'Futures depth unavailable')
+            finally:await a.close()
         if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT']: raise HTTPException(422,'Unsupported market')
         a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         try: return await a.depth(symbol)
@@ -124,7 +147,7 @@ def create_app(database=None):
         finally: await a.close()
     @app.post('/agent/mode')
     def mode(body: Command,u=Depends(owner),db=Depends(db_dep)):
-        locked=db.scalar(select(User).where(User.id==u.id).with_for_update())
+        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
         locked.mode=body.mode; record(db,u.id,'mode',{'mode':body.mode}); db.commit()
         return {'mode':body.mode,'notice':'Emergency stop prevents new exposure. Existing positions require explicit close.'}
     @app.post('/live/activate')
@@ -132,7 +155,7 @@ def create_app(database=None):
         raise HTTPException(409,'Live execution not implemented or certified. No order will be placed.')
     @app.put('/risk')
     def limits(body: Limits,u=Depends(owner),db=Depends(db_dep)):
-        locked=db.scalar(select(User).where(User.id==u.id).with_for_update()); locked.limits=body.model_dump(mode='json')
+        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True)); locked.limits=body.model_dump(mode='json')
         record(db,u.id,'risk_limits',locked.limits); db.commit(); return locked.limits
     @app.post('/paper/orders')
     def orders(body: Proposal,u=Depends(owner),db=Depends(db_dep)):
@@ -143,8 +166,8 @@ def create_app(database=None):
             raise HTTPException(409,str(e))
     @app.put('/positions/{position_id}/exits')
     def exits(position_id: str,body: Exits,u=Depends(owner),db=Depends(db_dep)):
-        db.scalar(select(User).where(User.id==u.id).with_for_update())
-        p=db.scalar(select(Position).where(Position.id==position_id,Position.user_id==u.id).with_for_update())
+        db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
+        p=db.scalar(select(Position).where(Position.id==position_id,Position.user_id==u.id).with_for_update().execution_options(populate_existing=True))
         if not p: raise HTTPException(404,'Position not found')
         if body.stop>=p.entry or (body.take_profit and body.take_profit<=p.entry): raise HTTPException(422,'Invalid exit levels')
         limits=Limits.model_validate(u.limits)
@@ -173,7 +196,14 @@ def create_app(database=None):
     def disconnect(connection_id: str,u=Depends(owner),db=Depends(db_dep)):
         c=db.scalar(select(Connection).where(Connection.id==connection_id,Connection.user_id==u.id))
         if not c: raise HTTPException(404,'Connection not found')
-        db.delete(c);record(db,u.id,'connection_removed',{'id':connection_id});db.commit()
+        if c.capabilities.get('product')=='futures':
+            from database.models import FuturesAccount,FuturesIntent
+            state=db.get(FuturesAccount,c.id)
+            pending=db.scalar(select(FuturesIntent).where(FuturesIntent.connection_id==c.id,FuturesIntent.state.in_(['pending','submitting','unknown','acknowledged','partial','open'])))
+            if pending or (state and any(Decimal(str(p['holdVol']))>0 for p in state.data['positions'])):raise HTTPException(409,'Close/reconcile live exposure before deleting this credential')
+            c.ciphertext='revoked';c.capabilities={**c.capabilities,'revoked':True}
+        else:db.delete(c)
+        record(db,u.id,'connection_removed',{'id':connection_id});db.commit()
         return {'removed':True,'notice':'Revoke the key on the exchange separately'}
     @app.get('/audit/export')
     def export(u=Depends(owner),db=Depends(db_dep)):
@@ -192,5 +222,7 @@ def create_app(database=None):
                                         'portfolio':portfolio(db,u),'positions':serialize_positions(db,u)})
                 await asyncio.sleep(3)
         except (WebSocketDisconnect,asyncio.TimeoutError): pass
+    from backend.futures_api import install
+    install(app,db_dep,owner)
     return app
 app=create_app()

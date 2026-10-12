@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -19,35 +20,35 @@ import java.math.RoundingMode
 import java.text.DecimalFormat
 
 object ZenColors {
-    val Background=Color(0xFF090D11)
-    val Surface=Color(0xFF11171E)
-    val Raised=Color(0xFF19222C)
-    val Border=Color(0xFF26323E)
-    val Text=Color(0xFFE9EFF5)
-    val Muted=Color(0xFF8C9BAB)
-    val Emerald=Color(0xFF58D3AB)
-    val Red=Color(0xFFE58A94)
-    val Blue=Color(0xFF92B5DD)
+    val Background=Color(0xFF080B10)
+    val Surface=Color(0xFF10161F)
+    val Raised=Color(0xFF1B2532)
+    val Border=Color(0xFF263446)
+    val Text=Color(0xFFF2F5F7)
+    val Muted=Color(0xFF8F9CAE)
+    val Emerald=Color(0xFF78E7C4)
+    val Red=Color(0xFFEB8D98)
+    val Blue=Color(0xFF96B9F3)
 }
 @Composable fun ZenTheme(content: @Composable ()->Unit) {
     MaterialTheme(colorScheme=darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,
         background=ZenColors.Background,surface=ZenColors.Surface,surfaceVariant=ZenColors.Raised,
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red),
         typography=Typography(
-            displaySmall=TextStyle(fontFamily=FontFamily.SansSerif,fontWeight=FontWeight.Medium,fontSize=38.sp,lineHeight=44.sp,letterSpacing=(-1).sp),
-            headlineMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=27.sp,lineHeight=34.sp,letterSpacing=(-.6).sp),
+            displaySmall=TextStyle(fontFamily=FontFamily.SansSerif,fontWeight=FontWeight.Medium,fontSize=44.sp,lineHeight=50.sp,letterSpacing=(-1).sp),
+            headlineMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=30.sp,lineHeight=38.sp,letterSpacing=(-.6).sp),
             titleLarge=TextStyle(fontWeight=FontWeight.Medium,fontSize=22.sp,lineHeight=28.sp),
             titleMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=16.sp,lineHeight=22.sp),
             bodyLarge=TextStyle(fontSize=15.sp,lineHeight=22.sp),
-            bodyMedium=TextStyle(fontSize=13.sp,lineHeight=20.sp),
-            bodySmall=TextStyle(fontSize=11.sp,lineHeight=16.sp),
+            bodyMedium=TextStyle(fontSize=14.sp,lineHeight=22.sp),
+            bodySmall=TextStyle(fontSize=12.sp,lineHeight=18.sp),
             labelLarge=TextStyle(fontWeight=FontWeight.Medium,fontSize=13.sp,lineHeight=18.sp),
-            labelSmall=TextStyle(fontWeight=FontWeight.Medium,fontSize=10.sp,lineHeight=14.sp,letterSpacing=.6.sp)
+            labelSmall=TextStyle(fontWeight=FontWeight.Medium,fontSize=11.sp,lineHeight=16.sp,letterSpacing=.6.sp)
         ),content=content)
 }
 @Composable fun SurfaceCard(modifier: Modifier=Modifier,content: @Composable ColumnScope.()->Unit) {
-    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(20.dp),color=ZenColors.Surface,border=BorderStroke(1.dp,ZenColors.Border.copy(alpha=.55f))) {
-        Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
+    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
+        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
     }
 }
 @Composable fun SectionLabel(title: String,trailing: @Composable (() -> Unit)?=null) {
@@ -83,7 +84,7 @@ object ZenColors {
     }
 }
 @Composable fun PrimaryAction(label: String,enabled: Boolean=true,onClick: ()->Unit) {
-    Button(onClick=onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp),shape=RoundedCornerShape(14.dp)) {Text(label)}
+    Button(onClick=onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp),shape=RoundedCornerShape(18.dp)) {Text(label)}
 }
 fun number(raw: String?,decimals: Int=2): String {
     val value=raw?.toBigDecimalOrNull() ?: return "—"
@@ -97,3 +98,9 @@ fun signedMoney(raw: String?): String {
     return (if(value.signum()>0) "+" else if(value.signum()<0) "−" else "")+"$"+number(value.abs().toPlainString())
 }
 fun pnlColor(raw: String?): Color = if((raw?.toBigDecimalOrNull()?.signum() ?: 0)<0) ZenColors.Red else if((raw?.toBigDecimalOrNull()?.signum() ?: 0)>0) ZenColors.Emerald else ZenColors.Text
+
+@Composable fun PortfolioHero(modifier: Modifier=Modifier,content: @Composable ColumnScope.()->Unit) {
+    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(28.dp),color=Color.Transparent,border=BorderStroke(.8.dp,ZenColors.Emerald.copy(alpha=.2f))) {
+        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF18302E),Color(0xFF142127),Color(0xFF111922)))).padding(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp),content=content)
+    }
+}

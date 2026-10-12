@@ -30,11 +30,13 @@ import java.math.RoundingMode
 import java.util.UUID
 
 @Composable fun ZenMark(modifier: Modifier=Modifier) {
-    Canvas(modifier.semantics {contentDescription="ZEN"}) {
-        val unit=size.width/32f
-        drawRoundRect(ZenColors.Raised,cornerRadius=androidx.compose.ui.geometry.CornerRadius(8*unit))
-        val path=Path().apply {moveTo(9*unit,10*unit);lineTo(22*unit,10*unit);lineTo(10*unit,22*unit);lineTo(23*unit,22*unit)}
-        drawPath(path,ZenColors.Emerald,style=Stroke(2.3f*unit))
+    Canvas(modifier.semantics {contentDescription="ZEN monogram"}) {
+        val u=size.width/100f
+        drawRoundRect(androidx.compose.ui.graphics.Brush.linearGradient(listOf(ZenColors.Emerald,androidx.compose.ui.graphics.Color(0xFF39BCA8))),cornerRadius=androidx.compose.ui.geometry.CornerRadius(28*u))
+        // Two offset planes form an original, crisp Z; no exchange branding.
+        val top=Path().apply {moveTo(24*u,28*u);lineTo(77*u,28*u);lineTo(45*u,61*u);lineTo(26*u,61*u);lineTo(47*u,40*u);lineTo(24*u,40*u);close()}
+        val bottom=Path().apply {moveTo(73*u,72*u);lineTo(21*u,72*u);lineTo(53*u,39*u);lineTo(73*u,39*u);lineTo(51*u,60*u);lineTo(73*u,60*u);close()}
+        drawPath(top,ZenColors.Background);drawPath(bottom,ZenColors.Background.copy(alpha=.92f))
     }
 }
 @Composable fun MarketDetail(c: ZenController,symbol: String,onBack: ()->Unit,onConfirm: (Confirmation)->Unit) {
@@ -43,8 +45,8 @@ import java.util.UUID
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=22.dp,vertical=12.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
             IconButton(onClick=onBack){Icon(Icons.Rounded.ArrowBack,"Back to markets")}
-            Column(Modifier.weight(1f)){Text(symbol,style=MaterialTheme.typography.titleLarge);Text("Spot · ${quote?.value("source") ?: "Awaiting source"}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
-            StatusPill("PAPER")
+            Column(Modifier.weight(1f)){Text(symbol,style=MaterialTheme.typography.titleLarge);Text("${if(symbol.contains("_")) "Perpetual" else "Spot"} · ${quote?.value("source") ?: "Awaiting source"}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
+            StatusPill(c.portfolio.value("mode") ?: "PAPER")
         }
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
             Text(money(quote?.value("last")),style=MaterialTheme.typography.headlineMedium,fontFamily=FontFamily.Monospace)
@@ -52,7 +54,7 @@ import java.util.UUID
         }
         SurfaceCard {
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("1m","3m","5m","15m","30m","1h","4h","1d").forEach {tf->FilterChip(c.chartTimeframe==tf,{c.chart(symbol,tf)},label={Text(tf.uppercase())})}
+                (if(symbol.contains("_")) listOf("1m","5m","15m","30m","1h","4h","1d") else listOf("1m","3m","5m","15m","30m","1h","4h","1d")).forEach {tf->FilterChip(c.chartTimeframe==tf,{c.chart(symbol,tf)},label={Text(tf.uppercase())})}
             }
             if(c.chartLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
             if(c.candles.length()>0) CandleChart(c.candles,symbol)
@@ -64,7 +66,7 @@ import java.util.UUID
             KeyValue("Bid",money(quote?.value("bid")));KeyValue("Ask",money(quote?.value("ask")))
             val bid=quote?.value("bid")?.toDoubleOrNull();val ask=quote?.value("ask")?.toDoubleOrNull();val last=quote?.value("last")?.toDoubleOrNull()
             KeyValue("Spread",if(bid!=null && ask!=null && last!=null && last>0) number(((ask-bid)/last*10000).toString())+" bps" else "—")
-            KeyValue("Funding","Not applicable · spot")
+            KeyValue("Funding",if(symbol.contains("_")) c.markets.rows().find {it.getJSONObject("quote").getString("symbol")==symbol}?.optJSONObject("ticker")?.value("fundingRate") ?: "Unavailable" else "Not applicable · spot")
             Text("Paper fills include a conservative cost model. They do not represent exchange execution speed or personal fee tiers.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         }
         if(c.depth.optJSONArray("bids")!=null) SurfaceCard {
@@ -80,11 +82,11 @@ import java.util.UUID
             }
             Text("Snapshot from ${c.depth.value("source") ?: "exchange"}; not a private order stream.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         }
-        PrimaryAction("Create paper order",enabled=quote!=null && !c.loading) {orderDialog=true}
+        PrimaryAction(if(symbol.contains("_")) "Open futures order" else "Create paper order",enabled=quote!=null && !c.loading) {orderDialog=true}
         Text("New exposure follows your risk limits. The daily target never overrides risk approval.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         Spacer(Modifier.height(16.dp))
     }
-    if(orderDialog && quote!=null) PaperOrderSheet(c,symbol,quote,onDismiss={orderDialog=false},onConfirm=onConfirm)
+    if(orderDialog && quote!=null) {if(symbol.contains("_")) FuturesOrderSheet(c,symbol,quote,onDismiss={orderDialog=false},onConfirm=onConfirm) else PaperOrderSheet(c,symbol,quote,onDismiss={orderDialog=false},onConfirm=onConfirm)}
 }
 @Composable fun CandleChart(rows: JSONArray,symbol: String) {
     val data=(0 until rows.length()).toList().takeLast(60).map {rows.getJSONArray(it)}
@@ -145,6 +147,7 @@ import java.util.UUID
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun PositionSheet(c: ZenController,initial: JSONObject,onDismiss: ()->Unit,onConfirm: (Confirmation)->Unit) {
+    if(initial.value("product")=="futures") {FuturesPositionSheet(c,initial,onDismiss,onConfirm);return}
     val id=initial.getString("id")
     val p=c.positions.rows().find {it.getString("id")==id}
     LaunchedEffect(p) {if(p==null) onDismiss()}

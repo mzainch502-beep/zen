@@ -2,7 +2,7 @@
 
 Native Android application with a persistent Railway backend, real public crypto market data, a transactional paper trading ledger and independent risk controls.
 
-**Backend 0.3 runs autonomous experimental paper spot trading with the existing Android 0.2 app. Live spot/futures execution remains locked.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
+**Release 0.4 adds redesigned Android screens, experimental LONG/SHORT paper futures and an owner-activated native MEXC manual execution path. Private exchange order acceptance is unvalidated; autonomous live strategies remain gated.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
 
 ## Install from your Android phone
 
@@ -34,7 +34,7 @@ Bearer sessions are encrypted with an Android Keystore AES-GCM key. Passwords an
 
 ## Research and execution boundary
 
-The background worker now runs an autonomous experimental paper loop: observe → assess → propose → independent risk approval → simulated fill → TP/SL/time exits → fee-aware outcome audit. It scans BTC/ETH/SOL approximately every minute and monitors exits each worker pass. See [continuous paper release evidence](docs/AUTONOMOUS-PAPER.md). LONG entries can execute automatically in Paper mode; bearish SHORT hypotheses remain WAIT because spot-only execution cannot short. The current research pipeline describes market structure and can conclude WAIT. No execution strategy has been promoted; descriptive signals and uncalibrated confidence are not treated as a trading edge. Automatic strategy training/promotion/rollback and full futures execution are unfinished. The tested historical baseline lost money after costs and was kept research-only.
+The background worker now runs an autonomous experimental paper loop: observe → assess → propose → independent risk approval → simulated fill → TP/SL/time exits → fee-aware outcome audit. It scans BTC/ETH/SOL approximately every minute and monitors exits each worker pass. See [continuous paper release evidence](docs/AUTONOMOUS-PAPER.md). Spot LONG entries can execute automatically in Paper mode; separately selected paper futures supports LONG/SHORT experiments. See [0.4 implementation and certification boundaries](docs/RELEASE-0.4.md). The current research pipeline describes market structure and can conclude WAIT. No execution strategy has been promoted; descriptive signals and uncalibrated confidence are not treated as a trading edge. Automatic strategy training/promotion/rollback and full certified futures execution are unfinished. The tested historical baseline lost money after costs and was kept research-only.
 
 Paper orders use fresh public bid/ask quotes, conservative modeled fees/slippage, account row locks and unique client IDs. Paper TP/SL runs on the worker; it is not an exchange-native protective order. Gaps or disconnections can exceed a planned loss. Private exchange keys and live sandbox orders have not been validated in this session.
 

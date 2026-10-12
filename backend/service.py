@@ -31,7 +31,7 @@ def portfolio(db,u):
 
 def execute(db,owner,p: Proposal):
     # PostgreSQL row lock serializes every capital/risk mutation for an owner across workers.
-    u=db.scalar(select(User).where(User.id==owner).with_for_update())
+    u=db.scalar(select(User).where(User.id==owner).with_for_update().execution_options(populate_existing=True))
     fp=digest(p.model_dump_json())
     old=db.scalar(select(Order).where(Order.user_id==owner,Order.client_id==p.idempotency_key))
     if old:
