@@ -81,7 +81,7 @@ def process_observation(db, owner, symbol, rows, now=None):
         return None
     d.update(symbol=symbol, decision_key=key)
     record(db, owner, 'decision', d)
-    if d['action'] != 'LONG':
+    if d['action'] != 'LONG' or not Limits.model_validate(u.limits).automatic:
         return d
     ps = positions(db, owner)
     if any(p.symbol == symbol for p in ps):

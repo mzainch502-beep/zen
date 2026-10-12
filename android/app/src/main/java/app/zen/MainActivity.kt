@@ -62,11 +62,11 @@ data class Confirmation(val title: String,val detail: String,val action: String,
         val mode=c.portfolio.value("mode") ?: "Paper"
         val worker=c.health.optBoolean("worker_online")
         Scaffold(containerColor=ZenColors.Background,topBar={
-            if(c.authorized) Column(Modifier.statusBarsPadding().padding(horizontal=22.dp,vertical=12.dp)) {
+            if(c.authorized) Column(Modifier.statusBarsPadding().padding(horizontal=22.dp,vertical=6.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
                     Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                        ZenMark(Modifier.size(34.dp))
-                        Column {Text("ZEN",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold);Text("INTELLIGENCE",style=MaterialTheme.typography.labelSmall,color=ZenColors.Muted)}
+                        ZenMark(Modifier.size(28.dp))
+                        Column {Text("ZEN",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold);Text("PRIVATE WORKSPACE",style=MaterialTheme.typography.labelSmall,color=ZenColors.Muted)}
                     }
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         StatusPill(if(!c.portfolio.optBoolean("paper",true)) when(mode) {"Paused"->"LIVE · PAUSED";"Emergency Stop"->"LIVE · STOPPED";else->"LIVE"} else if(mode=="Emergency Stop") "STOPPED" else "PAPER",if(!c.portfolio.optBoolean("paper",true) || mode=="Emergency Stop") ZenColors.Red else ZenColors.Blue)
@@ -81,7 +81,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                 }
             }
         },bottomBar={
-            if(c.authorized) Box(Modifier.navigationBarsPadding().padding(bottom=8.dp)) { NavigationBar(windowInsets=WindowInsets(0,0,0,0),modifier=Modifier.padding(horizontal=12.dp).clip(RoundedCornerShape(24.dp)).border(.7.dp,ZenColors.Border,RoundedCornerShape(24.dp)),containerColor=ZenColors.Surface,tonalElevation=0.dp) {
+            if(c.authorized) Box(Modifier.navigationBarsPadding().padding(top=4.dp,bottom=4.dp)) { NavigationBar(windowInsets=WindowInsets(0,0,0,0),modifier=Modifier.height(72.dp).padding(horizontal=16.dp).clip(RoundedCornerShape(22.dp)).border(.7.dp,ZenColors.Border,RoundedCornerShape(24.dp)),containerColor=ZenColors.Surface,tonalElevation=0.dp) {
                 ZenTab.entries.forEach { page -> NavigationBarItem(modifier=Modifier.testTag("nav-"+page.name),selected=tab==page,onClick={tab=page;market=null},
                     icon={Icon(when(page) {ZenTab.HOME->Icons.Rounded.SpaceDashboard;ZenTab.MARKETS->Icons.Rounded.ShowChart;ZenTab.AGENT->Icons.Rounded.Psychology;ZenTab.POSITIONS->Icons.Rounded.Layers;ZenTab.SETTINGS->Icons.Rounded.Tune},contentDescription=null)},
                     label={Text(page.label,style=MaterialTheme.typography.labelSmall)},
@@ -89,6 +89,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             }}
         }) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
+                if(c.authorized) AutomationControl(c,onConfirm={confirm=it})
                 if(c.loading) LinearProgressIndicator(Modifier.fillMaxWidth(),color=ZenColors.Emerald,trackColor=ZenColors.Surface)
                 c.error?.let { text -> FeedbackBanner(text,false,onDismiss={c.clearError()},onRetry=if(c.authorized) ({c.refresh()}) else null) }
                 c.notice?.let {text->FeedbackBanner(text,true,onDismiss={c.clearNotice()})}
@@ -166,7 +167,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
 }
 @Composable fun HomeScreen(c: ZenController,onMarkets: ()->Unit,onPositions: ()->Unit,onAgent: ()->Unit,onRisk: ()->Unit) {
     val p=c.portfolio;val paper=p.optBoolean("paper",true)
-    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(22.dp,16.dp,22.dp,28.dp),verticalArrangement=Arrangement.spacedBy(22.dp)) {
+    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp,12.dp,20.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {PageHeading("Overview",if(paper) "A clear view of your simulated capital." else "Your connected futures account.")}
         item {PortfolioHero {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Eyebrow(if(paper) "Paper portfolio" else "Portfolio equity");StatusPill("USDT",ZenColors.Emerald)}
@@ -232,7 +233,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     val mode=c.portfolio.value("mode");val paused=mode!="Paper" && mode!="Live";val liveAuthorized=c.futures.optBoolean("activated")
     val decisions=c.events.rows().filter {it.value("kind")=="decision"}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(22.dp,16.dp,22.dp,24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-        item {PageHeading("Intelligence","Live observations. Decisions with evidence.")}
+        item {PageHeading("Intelligence","Market observations and execution decisions.")}
         item {SurfaceCard {
             SectionLabel("Current state") {StatusPill(if(paused) "PAUSED" else if(c.health.optBoolean("worker_online")) "OBSERVING" else "OFFLINE")}
             Text(c.agent.value("summary") ?: "Collecting market context",style=MaterialTheme.typography.titleLarge)
@@ -277,7 +278,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     val rows=c.positions.rows().sortedBy {it.getString("symbol")}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(22.dp,16.dp,22.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {PageHeading("Positions","Every exposure, clearly accounted for.")}
-        if(rows.isEmpty()) item {EmptyState("No open positions","Approved paper orders appear here. Your connected exchange balances are untouched.","Explore markets",onMarkets)}
+        if(rows.isEmpty()) item {EmptyState("No open positions","Open positions from your active trading workspace appear here.","Explore markets",onMarkets)}
         items(rows,key={it.getString("id")}) {p->SurfaceCard {
             SectionLabel(p.getString("symbol").replace("_"," / ")) {StatusPill((p.value("side") ?: "LONG")+" · "+(p.value("product") ?: "SPOT").uppercase(),if(p.value("side")=="SHORT") ZenColors.Red else ZenColors.Emerald)}
             Text(signedMoney(p.value("unrealized")),style=MaterialTheme.typography.headlineMedium,color=pnlColor(p.value("unrealized")),fontFamily=FontFamily.Monospace)

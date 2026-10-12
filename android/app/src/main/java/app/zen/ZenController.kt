@@ -36,6 +36,7 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     val limits get() = snapshot.optJSONObject("limits") ?: JSONObject()
     val connections get() = snapshot.optJSONArray("connections") ?: JSONArray()
     val futures get() = snapshot.optJSONObject("futures") ?: JSONObject()
+    val automation get() = snapshot.optJSONObject("automation") ?: JSONObject()
     val agent get() = snapshot.optJSONObject("agent") ?: JSONObject()
 
     private fun failure(e: Exception) {
@@ -78,6 +79,9 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     }
     fun mode(value: String) = action(when(value) {"Paper"->"Paper workspace resumed.";"Paused"->"New positions paused. Existing exits remain active.";else->"Emergency stop active. No new positions can open."}) {
         repository.call("/agent/mode","POST",JSONObject().put("mode",value));refreshData()
+    }
+    fun automation(enabled: Boolean) = action(if(enabled) "Automatic paper entries enabled. The agent may choose WAIT." else "Automatic entries disabled. Protective exits remain active.") {
+        repository.call("/agent/automation","PUT",JSONObject().put("enabled",enabled));refreshData()
     }
     fun saveRisk(body: JSONObject) = action("Risk limits saved.") { repository.call("/risk","PUT",body);refreshData() }
     fun order(body: JSONObject) = action("Paper order completed. No exchange order was sent.") { repository.call("/paper/orders","POST",body);refreshData() }

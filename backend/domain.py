@@ -11,6 +11,7 @@ class Mode(StrEnum):
     EMERGENCY = 'Emergency Stop'
 
 class Limits(Strict):
+    automatic: bool = False
     max_loss_trade: Decimal = Field(default=Decimal('2'), gt=0, le=20)
     max_daily_loss: Decimal = Field(default=Decimal('6'), gt=0, le=50)
     max_drawdown: Decimal = Field(default=Decimal('20'), gt=0, le=100)

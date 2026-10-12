@@ -19,7 +19,6 @@ import java.util.UUID
     val fields=listOf("max_leverage" to "Leverage ceiling · ×","max_margin" to "Margin per position · USDT","max_notional" to "Total notional · USDT","max_loss_trade" to "Maximum trade loss · USDT","max_daily_loss" to "Daily loss limit · USDT","max_drawdown" to "Maximum drawdown · USDT","min_liquidation_distance" to "Minimum liquidation distance · fraction")
     val values=remember {mutableStateMapOf<String,String>().apply {fields.forEach {(key,_)->put(key,initial.value(key).orEmpty())}}}
     var maximum by remember {mutableStateOf(c.futures.optBoolean("exchange_max"))}
-    var automatic by remember {mutableStateOf(initial.optBoolean("automatic"))}
     var capital by remember {mutableStateOf("")}
     var connect by remember {mutableStateOf(false)}
     var key by remember {mutableStateOf("")};var secret by remember {mutableStateOf("")};var permissions by remember {mutableStateOf(false)}
@@ -35,10 +34,10 @@ import java.util.UUID
                 fields.forEach {(field,label)->ZenField(label,values[field].orEmpty(),{values[field]=it})}
                 Row(verticalAlignment=Alignment.CenterVertically){Switch(maximum,{maximum=it});Spacer(Modifier.width(12.dp));Text("Use discovered maximum, within my ceiling",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)}
                 Text("The ceiling is a permission, not a guarantee. Account tiers, fees, contract minimums and liquidation distance can still veto an order.",color=ZenColors.Muted,style=MaterialTheme.typography.bodySmall)
-                Row(verticalAlignment=Alignment.CenterVertically){Switch(automatic,{automatic=it});Spacer(Modifier.width(12.dp));Text("Automatic paper research trials",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)}
+                Text("Use the Automatic trading switch in the workspace header. Switching environments disables automation until you enable it again.",color=ZenColors.Muted,style=MaterialTheme.typography.bodySmall)
             }
             PrimaryAction("Save trading controls",enabled=!c.loading && values.values.all {it.toBigDecimalOrNull()!=null}) {
-                val limits=JSONObject(initial.toString());fields.forEach {(field,_)->limits.put(field,if(field=="max_leverage") values[field]?.toIntOrNull() ?: 0 else values[field])};limits.put("automatic",automatic)
+                val limits=JSONObject(initial.toString());fields.forEach {(field,_)->limits.put(field,if(field=="max_leverage") values[field]?.toIntOrNull() ?: 0 else values[field])};limits.put("automatic",c.futures.optJSONObject("limits")?.optBoolean("automatic") ?: false)
                 c.saveFutures(JSONObject().put("workspace",workspace).put("limits",limits).put("exchange_max",maximum))
             }
             if(c.futures.optBoolean("activated")) OutlinedButton(onClick={onConfirm(Confirmation("Return to paper","Close and reconcile live exposure first. Keep encrypted credentials for future activation.","Return to paper"){c.deactivateFutures()})},enabled=!c.loading,modifier=Modifier.fillMaxWidth()){Text("Return to paper mode")}

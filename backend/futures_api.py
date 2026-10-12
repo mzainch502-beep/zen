@@ -52,6 +52,11 @@ def install(app,db_dep,owner):
     def save(body:Settings,u=Depends(owner),db=Depends(db_dep)):
         db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True));c=config(db,u.id)
         if c.activated and body.workspace=='spot':raise HTTPException(409,'Close and reconcile live exposure, then return to paper before changing workspace')
+        if c.activated and body.limits.automatic:
+            raise HTTPException(409,'Autonomous live strategy promotion remains pending')
+        if c.workspace!=body.workspace:
+            spot=dict(u.limits);spot['automatic']=False;u.limits=spot
+            body.limits.automatic=False
         c.workspace=body.workspace;c.limits=body.limits.model_dump(mode='json');c.exchange_max=body.exchange_max
         record(db,u.id,'futures_settings',body.model_dump(mode='json'));db.commit();return {'saved':True}
     @app.post('/futures/paper/seed')

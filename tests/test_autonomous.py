@@ -18,7 +18,7 @@ def world(tmp_path):
         rows.append([(int(now//60)-100+i)*60000,price-.01,price+.02,price-.02,price,20])
     q=Quote(symbol='BTC/USDT',bid=D('109.89'),ask=D('109.9'),last=D('109.9'),timestamp=time.time(),source='synthetic-test')
     with db.sessions() as s:
-        u=User(email='test@auto.invalid',password=password_hash('test-password-long'),mode='Paper',limits=Limits().model_dump(mode='json'))
+        u=User(email='test@auto.invalid',password=password_hash('test-password-long'),mode='Paper',limits=Limits(automatic=True).model_dump(mode='json'))
         s.add(u);s.add(Market(symbol=q.symbol,payload=q.model_dump(mode='json'),received=time.time()));s.commit()
         owner=u.id
     return db,owner,rows,now,q
@@ -115,3 +115,11 @@ def test_autonomous_drawdown_veto_persists_audit(world):
         veto=s.scalar(select(Record).where(Record.kind=='risk_veto'))
         assert 'Drawdown' in veto.payload['reason']
         assert s.scalar(select(Record).where(Record.kind=='decision')) is not None
+
+def test_disabled_automation_observes_without_opening(world):
+    db,owner,rows,now,q=world
+    with db.sessions() as s:
+        u=s.get(User,owner);limits=dict(u.limits);limits['automatic']=False;u.limits=limits;s.commit()
+        assert process_observation(s,owner,q.symbol,rows,now)['action']=='LONG';s.commit()
+        assert not list(s.scalars(select(Order)))
+        assert list(s.scalars(select(Record).where(Record.kind=='decision')))

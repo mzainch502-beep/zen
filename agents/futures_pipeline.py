@@ -19,7 +19,7 @@ def process(db,u,symbol,rows):
     t=market.ticker
     quote=Quote(symbol=symbol,bid=t['bid1'],ask=t['ask1'],last=t['lastPrice'],timestamp=int(t['timestamp'])/1000,source='mexc-futures')
     d=assess(rows,quote);d['version']=VERSION
-    if d['hypothesis']=='SHORT' and 'bar_timestamp' in d:
+    if d['hypothesis']=='SHORT' and d['reason']=='Bearish breakout observed; spot trial cannot open SHORT' and 'bar_timestamp' in d:
         drift=abs(float(rows[-1][4])/float(rows[-20][4])-1)
         if drift>d.get('expected_cost_bps',10000)/10000*2:d.update(action='SHORT',reason='Bearish breakout qualifies for simulated SHORT experiment')
     if u.mode=='Live':d['action']='WAIT';d['reason']='Autonomous live strategy promotion not validated; manual orders only'

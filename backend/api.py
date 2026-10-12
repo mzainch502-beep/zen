@@ -17,6 +17,9 @@ class Login(Strict):
     password: str=Field(min_length=1,max_length=256)
 class Setup(Login):
     setup_token: str=Field(min_length=16,max_length=256)
+class AutomationCommand(Strict):
+    enabled: bool
+
 class Command(Strict):
     mode: str=Field(pattern='^(Paper|Paused|Emergency Stop)$')
 class CredentialInput(Strict):
@@ -31,7 +34,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.4.0')
+    app=FastAPI(title='ZEN Paper API',version='0.4.2')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -104,9 +107,10 @@ def create_app(database=None):
         from backend.futures_domain import FuturesLimits
         cfg=config(db,u.id)
         future=live_snapshot(db,u.id) if cfg.live_connection_id and cfg.activated and cfg.workspace=='futures' else account(db,u.id) if cfg.workspace=='futures' else None
-        return {'account':{'email':u.email},
+        from backend.automation import status as automation_status
+        return {'automation':automation_status(db,u),'account':{'email':u.email},
             'agent':{'action':latest.get('action','WAIT'),'version':latest.get('version','research-v1'),
-                     'automated_paper':True,'research_trial':True,
+                     'automated_paper':automation_status(db,u)['enabled'],'research_trial':True,
                      'summary':'Continuous experimental paper scanner · unvalidated strategy',
                      'reason':latest.get('reason','Collecting evidence. Execution strategies remain gated by validation.')},
             'portfolio':future['portfolio'] if future else portfolio(db,u),'positions':future['positions'] if future else serialize_positions(db,u),
@@ -148,6 +152,18 @@ def create_app(database=None):
         try: return await a.depth(symbol)
         except Exception: raise HTTPException(503,'Order book currently unavailable')
         finally: await a.close()
+    @app.get('/agent/automation')
+    def automation_state(u=Depends(owner),db=Depends(db_dep)):
+        from backend.automation import status
+        return status(db,u)
+    @app.put('/agent/automation')
+    def automation_command(body:AutomationCommand,u=Depends(owner),db=Depends(db_dep)):
+        from backend.automation import change
+        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
+        try: result=change(db,locked,body.enabled)
+        except ValueError as e: raise HTTPException(409,str(e))
+        db.commit()
+        return result
     @app.post('/agent/mode')
     def mode(body: Command,u=Depends(owner),db=Depends(db_dep)):
         locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))

@@ -36,7 +36,7 @@ object ZenColors {
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red),
         typography=Typography(
             displaySmall=TextStyle(fontFamily=FontFamily.SansSerif,fontWeight=FontWeight.Medium,fontSize=44.sp,lineHeight=50.sp,letterSpacing=(-1).sp),
-            headlineMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=30.sp,lineHeight=38.sp,letterSpacing=(-.6).sp),
+            headlineMedium=TextStyle(fontWeight=FontWeight.SemiBold,fontSize=28.sp,lineHeight=34.sp,letterSpacing=(-.6).sp),
             titleLarge=TextStyle(fontWeight=FontWeight.Medium,fontSize=22.sp,lineHeight=28.sp),
             titleMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=16.sp,lineHeight=22.sp),
             bodyLarge=TextStyle(fontSize=15.sp,lineHeight=22.sp),
@@ -48,7 +48,7 @@ object ZenColors {
 }
 @Composable fun SurfaceCard(modifier: Modifier=Modifier,content: @Composable ColumnScope.()->Unit) {
     Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
-        Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
+        Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
     }
 }
 @Composable fun SectionLabel(title: String,trailing: @Composable (() -> Unit)?=null) {
