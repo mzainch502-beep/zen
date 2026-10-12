@@ -197,6 +197,7 @@ def create_app(database=None):
         return {'id':c.id,'capabilities':caps,'available_balances':balance,'notice':'Permission flags not verified; live trading remains disabled'}
     @app.delete('/connections/{connection_id}')
     def disconnect(connection_id: str,u=Depends(owner),db=Depends(db_dep)):
+        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
         c=db.scalar(select(Connection).where(Connection.id==connection_id,Connection.user_id==u.id))
         if not c: raise HTTPException(404,'Connection not found')
         if c.capabilities.get('product')=='futures':
@@ -205,6 +206,9 @@ def create_app(database=None):
             pending=db.scalar(select(FuturesIntent).where(FuturesIntent.connection_id==c.id,FuturesIntent.state.in_(['pending','submitting','unknown','acknowledged','partial','open'])))
             if pending or (state and any(Decimal(str(p['holdVol']))>0 for p in state.data['positions'])):raise HTTPException(409,'Close/reconcile live exposure before deleting this credential')
             c.ciphertext='revoked';c.capabilities={**c.capabilities,'revoked':True}
+            from backend.futures_paper import config
+            cfg=config(db,u.id)
+            if cfg.live_connection_id==c.id:cfg.activated=None;cfg.live_connection_id=None;locked.mode='Paused'
         else:db.delete(c)
         record(db,u.id,'connection_removed',{'id':connection_id});db.commit()
         return {'removed':True,'notice':'Revoke the key on the exchange separately'}

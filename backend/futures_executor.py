@@ -43,7 +43,7 @@ async def process(db,connection,a,intent_id):
             i.state='rejected';i.receipt={'reason':'Only verified one-way execution supported'};s.commit();return
         if not reduction and (owner.mode!='Live' or cfg.live_connection_id!=connection.id or not cfg.activated):
             i.state='rejected';i.receipt={'reason':'Live activation revoked or paused'};s.commit();return
-        symbol=i.symbol;client_id=i.client_id;source=dict(i.payload);limits=FuturesLimits.model_validate(cfg.limits)
+        symbol=i.symbol;client_id=i.client_id;source=dict(i.payload);limits=FuturesLimits.model_validate(cfg.limits);baseline_limits=dict(cfg.limits)
         # Mark as submitting BEFORE network I/O, so restart cannot repeat a write.
         i.state='submitting';i.updated=time.time();s.commit()
     try:
@@ -84,7 +84,9 @@ async def process(db,connection,a,intent_id):
         # Re-read mode immediately before external write; reductions bypass entry pause.
         with db.sessions() as s:
             current=s.get(User,connection.user_id)
-            if not reduction and current.mode!='Live':raise Rejected('Execution paused before submission')
+            latest_cfg=config(s,connection.user_id)
+            if not reduction and (current.mode!='Live' or latest_cfg.live_connection_id!=connection.id or not latest_cfg.activated):raise Rejected('Execution paused/revoked before submission')
+            if not reduction and latest_cfg.limits!=baseline_limits:raise Rejected('Risk limits changed during planning; submit a new proposal')
         response=await a.submit(payload)
         if not isinstance(response,dict) or not response.get('orderId'):raise UnknownSubmission('Acknowledgment cannot be identified safely')
         with db.sessions() as s:

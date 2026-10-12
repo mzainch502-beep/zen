@@ -175,3 +175,10 @@ def test_initial_margin_and_product_symbol_fail_closed():
  with pytest.raises(Rejected,match='initial margin'):make_plan(c=Contract.parse({**meta(),'initialMarginRate':'.3'}))
  with pytest.raises(Rejected,match='symbol'):make_plan(c=Contract.parse({**meta(),'symbol':'SOL_USDT'}))
  with pytest.raises(ValueError):Contract.parse({**meta(),'futureType':2})
+
+
+def test_revoked_futures_connection_cannot_queue(world):
+ db,u,c,h=world;conn=live_fixture(db,u)
+ with db.sessions() as s:
+  s.get(Connection,conn.id).capabilities={'product':'futures','revoked':True};s.commit()
+  with pytest.raises(Rejected,match='connection'):enqueue(s,u,proposal(),conn.id)

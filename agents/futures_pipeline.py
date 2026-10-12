@@ -2,7 +2,7 @@
 import hashlib,time
 from decimal import Decimal
 from sqlalchemy import select
-from database.models import FuturesConfig,FuturesMarket,Record,record
+from database.models import FuturesConfig,FuturesMarket,Record,User,record
 from backend.domain import Quote
 from backend.futures_domain import FuturesProposal,FuturesLimits,Contract
 from backend.futures_paper import execute_paper,account
@@ -11,6 +11,7 @@ from agents.autonomous import assess
 VERSION='futures-breakout-paper-trial-v1'
 
 def process(db,u,symbol,rows):
+    u=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
     cfg=db.get(FuturesConfig,u.id)
     if not cfg or cfg.workspace!='futures':return
     market=db.get(FuturesMarket,symbol)

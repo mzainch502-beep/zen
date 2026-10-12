@@ -12,7 +12,7 @@ from backend.service import Rejected
 def enqueue(db,owner,p,connection_id):
     u=db.scalar(select(User).where(User.id==owner).with_for_update().execution_options(populate_existing=True));c=config(db,owner)
     connection=db.scalar(select(Connection).where(Connection.id==connection_id,Connection.user_id==owner))
-    if not connection or connection.capabilities.get('product')!='futures':raise Rejected('Owner futures connection required')
+    if not connection or connection.capabilities.get('product')!='futures' or connection.capabilities.get('revoked'):raise Rejected('Owner futures connection required')
     if u.mode!='Live' or c.live_connection_id!=connection_id or not c.activated:raise Rejected('Live derivatives activation required')
     fingerprint=digest(p.model_dump_json())
     existing=db.scalar(select(FuturesIntent).where(FuturesIntent.user_id==owner,FuturesIntent.client_id==p.idempotency_key))
