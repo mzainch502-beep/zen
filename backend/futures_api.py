@@ -38,6 +38,10 @@ class Exits(Strict):
     take_profit:Decimal=Field(gt=0)
 
 def install(app,db_dep,owner):
+    @app.get('/futures/public-contracts')
+    def public_contracts(db=Depends(db_dep)):
+        # Public exchange data only. Never contains owners, balances or credentials.
+        return [{'symbol':m.symbol,'ticker':m.ticker,'contract':m.contract,'received':m.received,'source':'mexc-futures','stale':time.time()-m.received>15} for m in db.scalars(select(FuturesMarket))]
     @app.get('/futures/settings')
     def settings(u=Depends(owner),db=Depends(db_dep)):
         c=config(db,u.id)

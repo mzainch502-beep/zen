@@ -21,7 +21,7 @@ Leverage 500 is a configurable **ceiling**, not a universal contract or account 
 
 Cross margin, hedge-mode execution, unrestricted simultaneous live symbols, native protective-order-status reconciliation/editing, private streaming fills, live automatic reversals, full fee/funding accounting, calibrated adaptive learning and signed production releases remain unfinished. New live entries request native TP/SL; acceptance/protection must be verified on the exchange. An exchange outage or gap can exceed planned loss.
 
-Paper funding is reserved conservatively at entry but actual funding settlement is not simulated. The app labels it unavailable rather than reporting fabricated zero costs. Paper liquidation prices are isolated-model estimates; live liquidation values use native reported fields when available. Complete daily live P&L is withheld until the full fee/funding ledger is certified.
+Paper taker fees use a conservative 8 bps per-side floor, or the higher public contract rate; actual private account fees are not fabricated. Paper funding is reserved conservatively at entry but actual funding settlement is not simulated. The app labels it unavailable rather than reporting fabricated zero costs. Paper liquidation prices are isolated-model estimates; live liquidation values use native reported fields when available. Complete daily live P&L is withheld until the full fee/funding ledger is certified.
 
 ## Phone workflow
 

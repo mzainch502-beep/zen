@@ -62,7 +62,9 @@ def execute_paper(db,owner,p):
     if any(x['symbol']==p.symbol for x in snap['positions']):raise Rejected('Existing symbol exposure')
     recent=db.scalars(select(Record).where(Record.user_id==owner,Record.kind=='futures_paper_fill',Record.created>time.time()-60)).all()
     if len(recent)>=limits.max_order_rate:raise Rejected('Futures order rate limit')
-    d=plan(p,Contract.parse(m.contract),m.ticker,limits,b.cash,D(snap['portfolio']['equity']),D(snap['portfolio']['exposure']),
+    contract=Contract.parse(m.contract)
+    contract=contract.model_copy(update={'taker_fee':max(contract.taker_fee,Decimal('.0008'))})
+    d=plan(p,contract,m.ticker,limits,b.cash,D(snap['portfolio']['equity']),D(snap['portfolio']['exposure']),
            len(snap['positions']),D(snap['portfolio']['daily_net']),b.high_water,time.time())
     b.cash-=d['margin']+d['entry_fee']
     position=FuturesPaperPosition(user_id=owner,symbol=p.symbol,data=json_safe(d));db.add(position);db.flush()

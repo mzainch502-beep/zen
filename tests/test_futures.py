@@ -161,3 +161,11 @@ def test_cached_owner_cannot_bypass_pause(world):
   assert stale.get(User,u).mode=='Paper'
   with db.sessions() as fresh:fresh.get(User,u).mode='Paused';fresh.commit()
   with pytest.raises(Rejected,match='paused'):execute_paper(stale,u,proposal())
+
+
+def test_public_contract_data_does_not_expose_accounts(world):
+ db,u,c,h=world
+ r=c.get('/futures/public-contracts');assert r.status_code==200
+ assert len(r.json())==1 and r.json()[0]['source']=='mexc-futures'
+ assert 'futures@test.invalid' not in r.text and 'password' not in r.text
+ assert c.get('/futures/settings').status_code==401
