@@ -1,0 +1,20 @@
+{
+  "name": "ZEN paper backend",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+  },
+  "forwardPorts": [
+    8080
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "ZEN API — paper only",
+      "onAutoForward": "notify",
+      "protocol": "http"
+    }
+  },
+  "postCreateCommand": "bash infra/codespaces-setup.sh",
+  "postStartCommand": "bash infra/codespaces-start.sh",
+  "remoteUser": "vscode"
+}
