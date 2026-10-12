@@ -35,9 +35,15 @@ class NavigationTest {
     @get:Rule val compose=createComposeRule()
     private fun capture(name: String) {
         val instrumentation=InstrumentationRegistry.getInstrumentation()
-        val bitmap=instrumentation.uiAutomation.takeScreenshot() ?: return
-        val folder=File(instrumentation.targetContext.getExternalFilesDir(null),"ui-qa").apply {mkdirs()}
-        File(folder,"$name.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+        // Only synthetic instrumentation screens are captured; production keeps FLAG_SECURE.
+        instrumentation.runOnMainSync {
+            androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED)
+                .forEach {it.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)}
+        }
+        compose.waitForIdle()
+        val descriptor=instrumentation.uiAutomation.executeShellCommand("mkdir -p /sdcard/Download/zen-ui-qa && screencap -p /sdcard/Download/zen-ui-qa/$name.png")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).use {it.readBytes()}
     }
     @Test fun signInInputsAndConnectionSettingsWork() {
         val fixture=FixtureRepository(false)

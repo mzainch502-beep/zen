@@ -168,3 +168,7 @@ def test_depth_authenticated_and_market_allowlist(setup):
 def test_bootstrap_status_is_disabled_after_owner(setup):
     db,u,c,h=setup
     assert c.get('/bootstrap/status').json()['setup_available'] is False
+
+def test_maintenance_refuses_real_account():
+    from backend.maintenance import purge_deployment_fixture
+    with pytest.raises(ValueError):purge_deployment_fixture('owner@real.example')
