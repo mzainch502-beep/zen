@@ -1,0 +1,32 @@
+name: Backend validation
+on: [push, pull_request, workflow_dispatch]
+permissions: {contents: read}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: {POSTGRES_USER: zen, POSTGRES_PASSWORD: test-only-password, POSTGRES_DB: zen_test}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U zen" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q --junitxml=results.xml
+        env: {TEST_POSTGRES_URL: 'postgresql+psycopg://zen:test-only-password@localhost:5432/zen_test'}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: validation-results, path: results.xml}
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: gitleaks/gitleaks-action@v2
+        env: {GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install pip-audit && pip-audit -r requirements.txt

@@ -1,0 +1,4 @@
+ERROR:pip_audit._virtual_env:internal pip failure: ERROR: Cannot install -r requirements.txt (line 9) and multidict==6.9.1 because these package versions have conflicting dependencies.
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts
+
+ERROR:pip_audit._cli:Failed to install packages: ['/tmp/tmp5h1d6d8e/bin/python', '-m', 'pip', 'install', '--no-input', '--keyring-provider=subprocess', '--dry-run', '--report', '/tmp/tmp5s2_7dix/tmp7dw9w_jj', '-r', 'requirements.txt']

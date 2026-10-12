@@ -1,0 +1,83 @@
+{
+  "collected_at": 1791776339.6308856,
+  "results": [
+    {
+      "exchange": "binance",
+      "status": "unavailable",
+      "error_type": "ExchangeNotAvailable",
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "bybit",
+      "status": "unavailable",
+      "error_type": "ExchangeError",
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "okx",
+      "status": "public_quote_received",
+      "quote": {
+        "symbol": "BTC/USDT",
+        "bid": "83600.0",
+        "ask": "83600.1",
+        "last": "83600.1",
+        "timestamp": 1791776328.172,
+        "source": "okx",
+        "change_percent": "0.7093010228727896"
+      },
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "kraken",
+      "status": "unavailable",
+      "error_type": "ValueError",
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "coinbase",
+      "status": "public_quote_received",
+      "quote": {
+        "symbol": "BTC/USD",
+        "bid": "83490.01",
+        "ask": "83490.02",
+        "last": "83490.02",
+        "timestamp": 1791776322.137,
+        "source": "coinbase",
+        "change_percent": null
+      },
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "bitget",
+      "status": "public_quote_received",
+      "quote": {
+        "symbol": "BTC/USDT",
+        "bid": "83597.93",
+        "ask": "83597.94",
+        "last": "83597.94",
+        "timestamp": 1791776326.57,
+        "source": "bitget",
+        "change_percent": "0.703"
+      },
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "kucoin",
+      "status": "unavailable",
+      "error_type": "ExchangeError",
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "gate",
+      "status": "unavailable",
+      "error_type": "ValueError",
+      "private_execution_validated": false
+    },
+    {
+      "exchange": "mexc",
+      "status": "unavailable",
+      "error_type": "ExchangeError",
+      "private_execution_validated": false
+    }
+  ]
+}

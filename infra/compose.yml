@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zen
+      POSTGRES_USER: zen
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zen"]
+      interval: 5s
+      retries: 10
+  api:
+    build: {context: .., dockerfile: infra/Dockerfile}
+    environment:
+      DATABASE_URL: postgresql+psycopg://zen:${POSTGRES_PASSWORD}@postgres:5432/zen
+      CREDENTIAL_MASTER_KEY: ${CREDENTIAL_MASTER_KEY:?set a base64 32-byte key}
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on: {postgres: {condition: service_healthy}}
+  worker:
+    build: {context: .., dockerfile: infra/Dockerfile}
+    command: ["python", "-m", "backend.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://zen:${POSTGRES_PASSWORD}@postgres:5432/zen
+      MARKET_EXCHANGE: ${MARKET_EXCHANGE:-binance}
+    depends_on: [api]
+    restart: on-failure
+volumes:
+  pgdata:
