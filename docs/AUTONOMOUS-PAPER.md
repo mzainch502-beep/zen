@@ -14,8 +14,10 @@ Every worker pass checks fresh bid prices for stops and targets. Automatic entri
 
 ## Evidence and limitations
 
-- Local test run: 54 passed, two PostgreSQL-only tests skipped locally. GitHub CI runs PostgreSQL migration/concurrency validation separately.
+- Local test run: 54 passed, two PostgreSQL-only tests skipped locally. GitHub CI run 38211288952 passed all 56 tests, PostgreSQL migration/concurrency validation, dependency scanning and secret scanning.
 - Synthetic fixtures exercise automatic entry, subsequent real-time-style TP close, repeat-bar/restart duplicate prevention, paused/emergency veto, maximum-hold close, fee accounting, stale exits and historical chronology/cost behavior. Synthetic gains are not strategy results.
+- An isolated background worker process fetched actual quotes/candles for all three symbols and persisted three decisions with zero market/research errors (`autonomous-worker-smoke.json`).
+- Railway API and worker deployments reached SUCCESS; public HTTPS reports API 0.3.0, autonomous paper enabled, worker online and paper-breakout-trial-v1 heartbeat (`AUTONOMOUS-DEPLOYMENT.json`).
 - Real Bitget BTC/ETH/SOL observations are in `autonomous-public-observation.json`. The sampled market produced WAIT; no live orders or forced paper entries were placed.
 - `autonomous-historical-replay.json` retains 999 real completed BTC 1m candles and chronological holdout summaries. This narrow sample produced zero closed trades and zero P&L. It establishes neither profitability nor validation; no model was promoted.
 - Reproduce the recorded replay with `python -m research.trial docs/autonomous-historical-replay.json`. Modeled fees are 10 bps per side, slippage 10 bps per side, spread 2 bps. Actual historical bid/ask and fills were unavailable; OHLC replay conservatively chooses a stop when both exits could be touched.

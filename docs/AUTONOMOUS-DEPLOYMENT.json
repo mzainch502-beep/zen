@@ -1,0 +1,18 @@
+{
+  "checked_at": 1791785601.9692936,
+  "health": {
+    "status": "ok",
+    "live_execution": false,
+    "autonomous_paper": true,
+    "worker_version": "paper-breakout-trial-v1",
+    "worker_online": true
+  },
+  "api_version": "0.3.0",
+  "backend_tests_passed": 56,
+  "ci_run": 38211288952,
+  "real_orders": 0,
+  "source_commit": "d13f86c835b08399aa128c90f754e42e8719b311",
+  "api_deployment_id": "3c4552c2-91c4-4c7c-b309-ab2282e69020",
+  "worker_deployment_id": "1a0770f0-cd1d-44c8-83bf-6945e3106442",
+  "status": "verified"
+}

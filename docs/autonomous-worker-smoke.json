@@ -1,0 +1,84 @@
+{
+  "real_market_source": "bitget",
+  "worker_process_running": true,
+  "observed_symbols": [
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT"
+  ],
+  "decisions": [
+    {
+      "schema_version": 1,
+      "action": "WAIT",
+      "hypothesis": "WAIT",
+      "version": "paper-breakout-trial-v1",
+      "selected_strategy": "paper-breakout-trial-v1",
+      "confidence": null,
+      "evidence": [
+        "Observed 20-bar return -0.00134",
+        "14-bar range fraction 0.00037",
+        "Modeled round-trip cost 40.00 bps"
+      ],
+      "contradictions": [
+        "Experimental paper trial; predictive value unvalidated"
+      ],
+      "reason": "No cost-filtered breakout; WAIT",
+      "research_trial": true,
+      "bar_timestamp": 1791785400000,
+      "stop_fraction": 0.005,
+      "expected_cost_bps": 40.00119241556923,
+      "symbol": "BTC/USDT",
+      "decision_key": "auto-11f51de692e3ce43cbb7b0df18b79e0045036982b27ea9c9"
+    },
+    {
+      "schema_version": 1,
+      "action": "WAIT",
+      "hypothesis": "WAIT",
+      "version": "paper-breakout-trial-v1",
+      "selected_strategy": "paper-breakout-trial-v1",
+      "confidence": null,
+      "evidence": [
+        "Observed 20-bar return -0.00244",
+        "14-bar range fraction 0.00051",
+        "Modeled round-trip cost 40.04 bps"
+      ],
+      "contradictions": [
+        "Experimental paper trial; predictive value unvalidated"
+      ],
+      "reason": "No cost-filtered breakout; WAIT",
+      "research_trial": true,
+      "bar_timestamp": 1791785400000,
+      "stop_fraction": 0.005,
+      "expected_cost_bps": 40.03909701533385,
+      "symbol": "ETH/USDT",
+      "decision_key": "auto-11250e789205fe99a51388bacc6e0bcf62e0ef887d3bdd05"
+    },
+    {
+      "schema_version": 1,
+      "action": "WAIT",
+      "hypothesis": "WAIT",
+      "version": "paper-breakout-trial-v1",
+      "selected_strategy": "paper-breakout-trial-v1",
+      "confidence": null,
+      "evidence": [
+        "Observed 20-bar return -0.00381",
+        "14-bar range fraction 0.00092",
+        "Modeled round-trip cost 40.89 bps"
+      ],
+      "contradictions": [
+        "Experimental paper trial; predictive value unvalidated"
+      ],
+      "reason": "No cost-filtered breakout; WAIT",
+      "research_trial": true,
+      "bar_timestamp": 1791785400000,
+      "stop_fraction": 0.005,
+      "expected_cost_bps": 40.89015488695033,
+      "symbol": "SOL/USDT",
+      "decision_key": "auto-170e78f80126fbebd8372127681f6e93b6cb38b4fc342ff2"
+    }
+  ],
+  "errors": [],
+  "real_orders": 0,
+  "isolated_temporary_paper_database": true,
+  "passed": true
+}

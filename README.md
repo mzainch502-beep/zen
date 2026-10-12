@@ -2,7 +2,7 @@
 
 Native Android application with a persistent Railway backend, real public crypto market data, a transactional paper trading ledger and independent risk controls.
 
-**Release 0.2 runs paper spot trading. Live spot/futures execution remains locked.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
+**Backend 0.3 runs autonomous experimental paper spot trading with the existing Android 0.2 app. Live spot/futures execution remains locked.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
 
 ## Install from your Android phone
 
@@ -10,7 +10,7 @@ Native Android application with a persistent Railway backend, real public crypto
 2. Open ZEN. The production backend address is already configured.
 3. Select **Create account on the Welcome back card**, enter your own email and a password of at least 12 characters, then paste your private setup code from the owner setup note delivered separately.
 4. Sign-in happens automatically after account creation. The code cannot create another owner once an account exists.
-5. Explore Markets, open a chart, and use **Create paper order** to exercise your own plan. The independent risk governor can reject a proposal.
+5. Paper mode allows automatic experimental LONG proposals from the backend scanner; you can also create your own paper order in Markets. The independent risk governor can veto either. Use Agent → Pause to block new entries.
 6. Positions → Manage position supports protective exits, partial reductions and full close. Agent pause/resume controls new paper exposure. Emergency stop is in the header.
 7. Exchange connections are optional for paper mode. Use only read-only keys with trading, transfers and withdrawals disabled. Private account access depends on exchange APIs, permissions and region.
 
@@ -40,7 +40,7 @@ Paper orders use fresh public bid/ask quotes, conservative modeled fees/slippage
 
 ## Validation and development
 
-See [release evidence](docs/RELEASE-0.2.md) and [cloud end-to-end results](docs/DEPLOYMENT-E2E.json). Synthetic prices used for Android instrumentation exist only in the test APK; the production client has no demo balance or price feed.
+See [autonomous paper release evidence](docs/AUTONOMOUS-PAPER.md), [verified deployment](docs/AUTONOMOUS-DEPLOYMENT.json), and [earlier app end-to-end results](docs/DEPLOYMENT-E2E.json). Synthetic prices used for Android instrumentation exist only in the test APK; the production client has no demo balance or price feed.
 
 ```sh
 pip install -r requirements.txt
