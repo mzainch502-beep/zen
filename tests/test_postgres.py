@@ -34,7 +34,7 @@ def test_concurrent_autonomous_bar_once():
         price=100+i*.1
         rows.append([(int(now//60)-100+i)*60000,price-.01,price+.02,price-.02,price,20])
     with db.sessions() as s:
-        u=User(email='auto-concurrency@test.invalid',password=password_hash('long-test-password'),mode='Paper',limits=Limits().model_dump(mode='json'))
+        u=User(email='auto-concurrency@test.invalid',password=password_hash('long-test-password'),mode='Paper',limits=Limits(automatic=True).model_dump(mode='json'))
         s.add(u);s.merge(Market(symbol='BTC/USDT',payload=q(bid=Decimal('109.89'),ask=Decimal('109.9'),last=Decimal('109.9')).model_dump(mode='json'),received=now));s.commit();owner=u.id
     def scan():
         with db.sessions() as s:

@@ -48,3 +48,13 @@ def test_session_and_body_validation(world):
     assert c.put('/agent/automation',json={'enabled':True,'extra':'invalid'}).status_code==422
     c.headers.clear()
     assert c.put('/agent/automation',json={'enabled':True}).status_code==401
+
+
+def test_settings_cannot_secretly_arm_automation(world):
+    db,c,uid=world
+    limits=c.get('/snapshot').json()['limits'];limits['automatic']=True
+    assert c.put('/risk',json=limits).status_code==200
+    assert not c.get('/agent/automation').json()['requested']
+    limits=c.get('/futures/settings').json()['limits'];limits['automatic']=True
+    assert c.put('/futures/settings',json={'workspace':'spot','limits':limits}).status_code==200
+    with db.sessions() as s:assert not config(s,uid).limits['automatic']

@@ -178,6 +178,7 @@ def create_app(database=None):
         from database.models import FuturesConfig
         cfg=db.get(FuturesConfig,u.id)
         if cfg and cfg.workspace=='futures':raise HTTPException(409,'Use Settings → Trading controls to edit futures limits. This editor applies to spot only.')
+        body.automatic=Limits.model_validate(locked.limits).automatic
         locked.limits=body.model_dump(mode='json')
         record(db,u.id,'risk_limits',locked.limits); db.commit(); return locked.limits
     @app.post('/paper/orders')
