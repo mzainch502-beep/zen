@@ -84,7 +84,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             if(c.authorized) Box(Modifier.navigationBarsPadding().padding(top=4.dp,bottom=4.dp)) { NavigationBar(windowInsets=WindowInsets(0,0,0,0),modifier=Modifier.height(72.dp).padding(horizontal=16.dp).clip(RoundedCornerShape(22.dp)).border(.7.dp,ZenColors.Border,RoundedCornerShape(24.dp)),containerColor=ZenColors.Surface,tonalElevation=0.dp) {
                 ZenTab.entries.forEach { page -> NavigationBarItem(modifier=Modifier.testTag("nav-"+page.name),selected=tab==page,onClick={tab=page;market=null},
                     icon={Icon(when(page) {ZenTab.HOME->Icons.Rounded.SpaceDashboard;ZenTab.MARKETS->Icons.Rounded.ShowChart;ZenTab.AGENT->Icons.Rounded.Psychology;ZenTab.POSITIONS->Icons.Rounded.Layers;ZenTab.SETTINGS->Icons.Rounded.Tune},contentDescription=null)},
-                    label={Text(page.label,style=MaterialTheme.typography.labelSmall)},
+                    label={Text(page.label,maxLines=1,softWrap=false,style=MaterialTheme.typography.labelSmall.copy(fontSize=10.sp,letterSpacing=0.sp))},
                     colors=NavigationBarItemDefaults.colors(selectedIconColor=ZenColors.Emerald,selectedTextColor=ZenColors.Text,indicatorColor=ZenColors.Raised,unselectedIconColor=ZenColors.Muted,unselectedTextColor=ZenColors.Muted)) }
             }}
         }) { padding ->
