@@ -5,7 +5,7 @@ on:
     paths: ['android/**', '.github/workflows/build-apk.yml']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -27,3 +27,13 @@ jobs:
           name: ZEN-debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish phone-installable debug APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "zen-debug-${GITHUB_RUN_ID}" \
+            android/app/build/outputs/apk/debug/app-debug.apk \
+            --target "$GITHUB_SHA" \
+            --title "ZEN 0.4.1 debug" \
+            --notes "Native Android testing build. Defaults to paper mode. Private MEXC order acceptance is unvalidated; autonomous live strategies remain gated."

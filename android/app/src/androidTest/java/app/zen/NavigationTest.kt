@@ -10,11 +10,11 @@ import java.io.File
 import android.graphics.Bitmap
 
 /** Synthetic responses exist only in the instrumentation APK, never in the production app. */
-class FixtureRepository(signedIn: Boolean=true) : ZenRepository {
+class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false) : ZenRepository {
     override var base="https://instrumentation.invalid"
     override var token=if(signedIn) "instrumentation-only-session" else ""
     val calls=java.util.Collections.synchronizedList(mutableListOf<String>())
-    private var mode="Paper"
+    private var mode=if(live) "Paused" else "Paper"
     var futuresBody: JSONObject? = null
     override suspend fun call(path: String,method: String,body: JSONObject?): String {
         calls.add("$method $path")
@@ -25,7 +25,7 @@ class FixtureRepository(signedIn: Boolean=true) : ZenRepository {
             path=="/agent/mode" -> {mode=body!!.getString("mode");"""{"mode":"$mode"}"""}
             path=="/health" -> """{"status":"ok","worker_online":true,"live_execution":false}"""
             path=="/markets" -> """[{"stale":false,"quote":{"symbol":"BTC/USDT","last":"102425.25","bid":"102425.2","ask":"102425.3","change_percent":"0.4","source":"instrumentation-fixture"}},{"stale":false,"quote":{"symbol":"ETH/USDT","last":"3402.15","bid":"3402.1","ask":"3402.2","change_percent":"-0.7","source":"instrumentation-fixture"}}]"""
-            path=="/snapshot" -> """{"account":{"email":"qa-owner@example.invalid"},"portfolio":{"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
+            path=="/snapshot" -> """{"account":{"email":"qa-owner@example.invalid"},"futures":{"activated":$live},"portfolio":{"paper":${!live},"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
             path.startsWith("/candles") -> """{"candles":[[1700000000000,100,102,99,101,1000],[1700000300000,101,103,100,102,1200]]}"""
             path.startsWith("/market-depth") -> """{"source":"instrumentation-fixture","bids":[[100,1]],"asks":[[101,1]]}"""
             path=="/audit/export" -> "[]"
@@ -93,6 +93,13 @@ class NavigationTest {
         compose.waitUntil(10000) {fixture.calls.contains("PUT /futures/settings")}
         org.junit.Assert.assertEquals("futures",fixture.futuresBody?.getString("workspace"))
         org.junit.Assert.assertEquals(10,fixture.futuresBody?.getJSONObject("limits")?.getInt("max_leverage"))
+    }
+
+    @Test fun pausedLiveWorkspaceKeepsLiveLabel() {
+        val fixture=FixtureRepository(live=true)
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithText("LIVE · PAUSED").assertExists()
     }
 
 }

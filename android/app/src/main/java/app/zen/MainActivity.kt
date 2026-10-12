@@ -69,7 +69,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                         Column {Text("ZEN",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold);Text("INTELLIGENCE",style=MaterialTheme.typography.labelSmall,color=ZenColors.Muted)}
                     }
                     Row(verticalAlignment=Alignment.CenterVertically) {
-                        StatusPill(if(mode=="Emergency Stop") "STOPPED" else if(mode=="Live") "LIVE" else "PAPER",if(mode=="Live" || mode=="Emergency Stop") ZenColors.Red else ZenColors.Blue)
+                        StatusPill(if(!c.portfolio.optBoolean("paper",true)) when(mode) {"Paused"->"LIVE · PAUSED";"Emergency Stop"->"LIVE · STOPPED";else->"LIVE"} else if(mode=="Emergency Stop") "STOPPED" else "PAPER",if(!c.portfolio.optBoolean("paper",true) || mode=="Emergency Stop") ZenColors.Red else ZenColors.Blue)
                         IconButton(onClick={confirm=Confirmation("Emergency stop","Prevent all new positions. Existing positions stay open, and their protective exits remain active.","Stop new positions",true){c.mode("Emergency Stop")}},enabled=!c.loading) {
                             Icon(Icons.Rounded.PowerSettingsNew,contentDescription="Emergency stop",tint=ZenColors.Muted)
                         }
@@ -99,7 +99,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                     ZenTab.MARKETS->MarketsScreen(c,onMarket={symbol->market=symbol;c.chart(symbol,"5m")})
                     ZenTab.AGENT->AgentScreen(c,onConfirm={confirm=it})
                     ZenTab.POSITIONS->PositionsScreen(c,onPosition={position=it},onMarkets={tab=ZenTab.MARKETS})
-                    ZenTab.SETTINGS->SettingsScreen(c,onRisk={riskDialog=true},onExchange={exchangeDialog=true},onConfirm={confirm=it},share=share,onTrading={tradingDialog=true})
+                    ZenTab.SETTINGS->SettingsScreen(c,onRisk={if(c.portfolio.value("product")=="futures") tradingDialog=true else riskDialog=true},onExchange={exchangeDialog=true},onConfirm={confirm=it},share=share,onTrading={tradingDialog=true})
                 }
             }
         }
