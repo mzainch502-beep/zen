@@ -20,23 +20,23 @@ import java.math.RoundingMode
 import java.text.DecimalFormat
 
 object ZenColors {
-    val Background=Color(0xFF080B10)
-    val Surface=Color(0xFF10161F)
-    val Raised=Color(0xFF1B2532)
-    val Border=Color(0xFF263446)
+    val Background=Color(0xFF090B12)
+    val Surface=Color(0xFF141723)
+    val Raised=Color(0xFF202538)
+    val Border=Color(0xFF2B3147)
     val Text=Color(0xFFF2F5F7)
     val Muted=Color(0xFF8F9CAE)
     val Emerald=Color(0xFF78E7C4)
     val Red=Color(0xFFEB8D98)
-    val Blue=Color(0xFF96B9F3)
+    val Blue=Color(0xFFB1A4FF)
 }
 @Composable fun ZenTheme(content: @Composable ()->Unit) {
     MaterialTheme(colorScheme=darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,
         background=ZenColors.Background,surface=ZenColors.Surface,surfaceVariant=ZenColors.Raised,
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red),
         typography=Typography(
-            displaySmall=TextStyle(fontFamily=FontFamily.SansSerif,fontWeight=FontWeight.Medium,fontSize=44.sp,lineHeight=50.sp,letterSpacing=(-1).sp),
-            headlineMedium=TextStyle(fontWeight=FontWeight.SemiBold,fontSize=28.sp,lineHeight=34.sp,letterSpacing=(-.6).sp),
+            displaySmall=TextStyle(fontFamily=FontFamily.SansSerif,fontWeight=FontWeight.SemiBold,fontSize=40.sp,lineHeight=46.sp,letterSpacing=(-1).sp),
+            headlineMedium=TextStyle(fontWeight=FontWeight.SemiBold,fontSize=26.sp,lineHeight=32.sp,letterSpacing=(-.6).sp),
             titleLarge=TextStyle(fontWeight=FontWeight.Medium,fontSize=22.sp,lineHeight=28.sp),
             titleMedium=TextStyle(fontWeight=FontWeight.Medium,fontSize=16.sp,lineHeight=22.sp),
             bodyLarge=TextStyle(fontSize=15.sp,lineHeight=22.sp),
@@ -47,7 +47,7 @@ object ZenColors {
         ),content=content)
 }
 @Composable fun SurfaceCard(modifier: Modifier=Modifier,content: @Composable ColumnScope.()->Unit) {
-    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
+    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
         Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
     }
 }
@@ -103,4 +103,10 @@ fun pnlColor(raw: String?): Color = if((raw?.toBigDecimalOrNull()?.signum() ?: 0
     Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(28.dp),color=Color.Transparent,border=BorderStroke(.8.dp,ZenColors.Emerald.copy(alpha=.2f))) {
         Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF18302E),Color(0xFF142127),Color(0xFF111922)))).padding(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp),content=content)
     }
+}
+
+fun price(raw: String?): String {
+    val v=raw?.toBigDecimalOrNull() ?: return "—"
+    val d=if(v.abs()<BigDecimal("0.01")) 8 else if(v.abs()<BigDecimal.ONE) 5 else 2
+    return "$"+number(raw,d)
 }

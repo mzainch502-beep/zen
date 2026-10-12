@@ -1,0 +1,22 @@
+name: Public research replay
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['research/**', '.github/workflows/research-validation.yml']
+permissions: {contents: read}
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - name: Capture public-data replay or explicit availability failure
+        run: python -m research.replay --output research-results/report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-research-evidence
+          path: research-results/
+          if-no-files-found: error

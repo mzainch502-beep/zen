@@ -42,48 +42,77 @@ class MarketObserver:
                 await asyncio.sleep(5)
 
 async def run_futures_observer(db):
-    futures=MexcFutures();cycle=0
-    async def read(symbol):
-        try:
-            ticker=await futures.ticker(symbol)
-            with db.sessions() as s:m=s.get(FuturesMarket,symbol);refresh_meta=not m or cycle%60==0
-            metadata=(await futures.contracts(symbol))[0] if refresh_meta else None
+    from exchange_adapters.universe import catalogue,rotation
+    from database.models import FuturesPaperPosition
+    futures=MexcFutures();cycle=0;metadata={};cursor=0
+    semaphore=asyncio.Semaphore(3)
+    async def candles(symbol):
+        async with semaphore:
+            try:return symbol,[r for r in await futures.candles(symbol) if r[0]/1000+60<=time.time()]
+            except Exception:return symbol,None
+    async def scanner():
+        nonlocal cursor
+        while True:
+            with db.sessions() as s:owners=list(s.scalars(select(User)))
             with db.sessions() as s:
-                m=s.get(FuturesMarket,symbol)
-                if m:
-                    m.ticker=json_safe(ticker);m.received=time.time()
-                    if metadata:m.contract=json_safe(metadata)
-                else:s.add(FuturesMarket(symbol=symbol,ticker=json_safe(ticker),contract=json_safe(metadata),received=time.time()))
-                s.commit()
-        except Exception as e:
-            with db.sessions() as s:record(s,None,'futures_market_error',{'symbol':symbol,'error_type':type(e).__name__});s.commit()
+                held=list(s.scalars(select(FuturesPaperPosition.symbol)))
+                batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,12,held)
+            rows=await asyncio.gather(*(candles(symbol) for symbol in batch))
+            for u in owners:
+                scanned=0;failed=0;fills=0;vetoes=0
+                for symbol,completed in rows:
+                    if completed is None:failed+=1;continue
+                    try:
+                        # A fresh quote is required after candle requests.
+                        ticker=await futures.ticker(symbol)
+                        with db.sessions() as s:
+                            market=s.get(FuturesMarket,symbol)
+                            if market:
+                                market.ticker=json_safe(ticker);market.received=time.time()
+                                d=research_futures(s,u,symbol,completed)
+                                if d:scanned+=1;fills+=d['execution']=='filled';vetoes+=d['execution']=='risk_veto'
+                            s.commit()
+                    except Exception as e:
+                        failed+=1
+                        with db.sessions() as s:record(s,u.id,'research_error',{'symbol':symbol,'error_type':type(e).__name__});s.commit()
+                with db.sessions() as s:record(s,u.id,'scan_summary',{'catalogue':len(metadata),'batch':len(batch),'evaluated':scanned,'data_errors':failed,'fills':fills,'risk_vetoes':vetoes,'cursor':cursor});s.commit()
+            await asyncio.sleep(30)
+    scanner_task=asyncio.create_task(scanner())
     try:
         while True:
-            await asyncio.gather(*(read(symbol) for symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']))
-            with db.sessions() as s:
-                record(s,None,'futures_observer_heartbeat',{'cycle':cycle})
-                owners=list(s.scalars(select(User)))
-                s.commit()
-            for u in owners:
+            started=time.monotonic()
+            try:
+                if not metadata or cycle%60==0:
+                    fresh=catalogue(await futures.contracts())
+                    if not fresh:raise ValueError('No supported perpetual contracts discovered')
+                    metadata=fresh
+                tickers=await futures.tickers()
                 with db.sessions() as s:
-                    cfg=s.get(FuturesConfig,u.id);active=bool(cfg and cfg.workspace=='futures')
-                    manage_futures(s,u.id);s.commit()
-                if active and cycle%12==0:
-                    for symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']:
-                        try:
-                            rows=await futures.candles(symbol)
-                            completed=[r for r in rows if r[0]/1000+60<=time.time()]
-                            # Refresh execution quote after the slower candle request.
-                            ticker=await futures.ticker(symbol)
-                            with db.sessions() as s:
-                                market=s.get(FuturesMarket,symbol)
-                                if market:market.ticker=json_safe(ticker);market.received=time.time();research_futures(s,u,symbol,completed)
-                                s.commit()
-                        except Exception as e:
-                            with db.sessions() as s:record(s,u.id,'research_error',{'symbol':symbol,'error_type':type(e).__name__});s.commit()
+                    existing={m.symbol:m for m in s.scalars(select(FuturesMarket))}
+                    for t in tickers:
+                        symbol=t['symbol']
+                        if symbol not in metadata:continue
+                        m=existing.get(symbol)
+                        if not m:m=FuturesMarket(symbol=symbol);s.add(m)
+                        if m.contract!=json_safe(metadata[symbol]):m.contract=json_safe(metadata[symbol])
+                        m.ticker=json_safe(t);m.received=time.time()
+                    # Delisted markets retained for exits/audit but blocked for new entries.
+                    for m in s.scalars(select(FuturesMarket)):
+                        if m.symbol not in metadata:m.contract={**m.contract,'state':1,'apiAllowed':False}
+                    record(s,None,'futures_observer_heartbeat',{'cycle':cycle,'catalogue':len(metadata),'fresh_quotes':len(tickers)})
+                    s.commit()
+            except Exception as e:
+                with db.sessions() as s:record(s,None,'futures_market_error',{'error_type':type(e).__name__});s.commit()
+            with db.sessions() as s:
+                owners=list(s.scalars(select(User)))
+            for u in owners:
+                with db.sessions() as s:manage_futures(s,u.id);s.commit()
             cycle+=1
-            await asyncio.sleep(5)
-    finally:await futures.close()
+            await asyncio.sleep(max(1,5-(time.monotonic()-started)))
+    finally:
+        scanner_task.cancel()
+        await asyncio.gather(scanner_task,return_exceptions=True)
+        await futures.close()
 
 async def run():
     db=Database()

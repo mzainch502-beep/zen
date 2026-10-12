@@ -37,6 +37,7 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     val connections get() = snapshot.optJSONArray("connections") ?: JSONArray()
     val futures get() = snapshot.optJSONObject("futures") ?: JSONObject()
     val automation get() = snapshot.optJSONObject("automation") ?: JSONObject()
+    val research get() = snapshot.optJSONObject("research") ?: JSONObject()
     val agent get() = snapshot.optJSONObject("agent") ?: JSONObject()
 
     private fun failure(e: Exception) {
@@ -92,6 +93,9 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
         repository.call("/connections","POST",JSONObject().put("exchange",exchange).put("api_key",key.trim()).put("secret",secret.trim()).put("passphrase",if(passphrase.isBlank()) JSONObject.NULL else passphrase).put("read_only_attestation",true));done();refreshData()
     }
     fun saveFutures(body: JSONObject) = action("Trading controls saved.") {repository.call("/futures/settings","PUT",body);refreshData()}
+    fun paperProfile(profile: String) = action("Paper $profile profile saved. Automatic futures research enabled.") {
+        repository.call("/agent/paper-profile","POST",JSONObject().put("profile",profile));refreshData()
+    }
     fun seedFutures(amount: String) = action("Simulated futures capital reset.") {repository.call("/futures/paper/seed","POST",JSONObject().put("equity",amount).put("confirmation","RESET SIMULATED CAPITAL"));refreshData()}
     fun futuresOrder(body: JSONObject) = action("Order submitted. Check the audit trail for its state.") {repository.call(if(portfolio.optBoolean("paper",true)) "/futures/paper/orders" else "/futures/live/orders","POST",body);refreshData()}
     fun futuresClose(id: String,fraction: String,key: String) = action("Position reduction submitted.") {repository.call("/futures/positions/$id/close","POST",JSONObject().put("fraction",fraction).put("idempotency_key",key));refreshData()}

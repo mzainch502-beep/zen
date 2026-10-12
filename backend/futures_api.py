@@ -16,6 +16,9 @@ class Settings(Strict):
     workspace:str=Field(pattern='^(spot|futures)$')
     limits:FuturesLimits
     exchange_max:bool=False
+class Profile(Strict):
+    profile:str=Field(pattern="^(balanced|aggressive)$")
+
 class Connect(Strict):
     api_key:str=Field(min_length=8,max_length=512)
     secret:str=Field(min_length=8,max_length=512)
@@ -38,6 +41,23 @@ class Exits(Strict):
     take_profit:Decimal=Field(gt=0)
 
 def install(app,db_dep,owner):
+    @app.get('/agent/research')
+    def research(u=Depends(owner),db=Depends(db_dep)):
+        from backend.research_status import status
+        return status(db,u.id)
+    @app.post('/agent/paper-profile')
+    def paper_profile(body:Profile,u=Depends(owner),db=Depends(db_dep)):
+        user=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True));c=config(db,u.id)
+        if c.activated or user.mode not in ['Paper','Paused']:raise HTTPException(409,'Paper profile cannot override live authorization or emergency stop')
+        aggressive=body.profile=='aggressive'
+        # Explicitly selected simulated preset only. It never changes live permissions.
+        limits=FuturesLimits(profile=body.profile,max_leverage=5 if aggressive else 1,max_margin=3,
+            max_notional=80 if aggressive else 40,max_positions=3 if aggressive else 2,max_slippage_bps=5 if aggressive else 10,
+            max_loss_trade=2,max_daily_loss=6,max_drawdown=20,automatic=True)
+        c.workspace='futures';c.limits=limits.model_dump(mode='json');c.exchange_max=False
+        spot=dict(user.limits);spot['automatic']=False;user.limits=spot;user.mode='Paper'
+        record(db,user.id,'paper_profile',{'profile':body.profile,'limits':c.limits,'paper':True})
+        db.commit();return {'saved':True,'mode':'Paper','workspace':'futures','profile':body.profile,'automatic':True}
     @app.get('/futures/public-contracts')
     def public_contracts(db=Depends(db_dep)):
         # Public exchange data only. Never contains owners, balances or credentials.

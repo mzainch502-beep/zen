@@ -15,10 +15,10 @@ import androidx.compose.ui.unit.dp
     val known=a.has("enabled")
     val canEnable=a.optBoolean("can_enable")
     val reason=a.value("blocked_reason")
-    Surface(color=ZenColors.Surface.copy(alpha=.6f)) {
+    Surface(color=ZenColors.Raised.copy(alpha=.45f)) {
         Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(2.dp)) {
-                Text("Automatic trading",style=MaterialTheme.typography.titleMedium)
+                Text("Automatic trading",style=MaterialTheme.typography.labelLarge)
                 Text(if(!known) "Loading saved state…" else if(!c.connected) "Disconnected · last known state" else if(reason!=null) reason else if(enabled) "Enabled · paper ${a.value("product") ?: "workspace"} · runs on backend" else "Disabled · observation and exits continue",style=MaterialTheme.typography.bodySmall,color=if(reason!=null) ZenColors.Blue else ZenColors.Muted)
             }
             Switch(checked=a.optBoolean("requested",enabled),enabled=known && c.connected && !c.loading && (enabled || canEnable || a.optBoolean("requested")),modifier=Modifier.testTag("automatic-trading-switch"),onCheckedChange={value->

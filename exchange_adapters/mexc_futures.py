@@ -65,16 +65,29 @@ class MexcFutures:
             rows=[row for row in rows if row.get("symbol")==symbol]
             if not rows:raise ExchangeFailure("Requested contract missing from metadata")
         return rows
+    @staticmethod
+    def validate_ticker(data,symbol=None):
+        if symbol and data.get('symbol')!=symbol:raise ExchangeFailure('Ticker symbol mismatch')
+        valid_symbol(data['symbol'])
+        prices=[Decimal(str(data[k])) for k in ['bid1','ask1','fairPrice','lastPrice']]
+        if not all(p.is_finite() and p>0 for p in prices) or prices[1]<prices[0]:raise ExchangeFailure('Invalid futures ticker prices')
+        if not -5<=time.time()-int(data['timestamp'])/1000<=15:raise ExchangeFailure('Stale/future futures ticker')
+        return data
+    async def tickers(self):
+        data=await self.request('GET','/api/v1/contract/ticker')
+        if not isinstance(data,list):raise ExchangeFailure('Bulk ticker response is not a catalogue')
+        result=[]
+        for row in data:
+            try:result.append(self.validate_ticker(row))
+            except (ExchangeFailure,ValueError,KeyError,TypeError):continue
+        return result
     async def ticker(self,symbol):
         data=await self.request('GET','/api/v1/contract/ticker',{'symbol':valid_symbol(symbol)})
         if isinstance(data,list):
             matches=[row for row in data if row.get('symbol')==symbol]
             if not matches:raise ExchangeFailure('Requested ticker missing')
             data=matches[0]
-        if data.get('symbol')!=symbol:raise ExchangeFailure('Ticker symbol mismatch')
-        if min(Decimal(str(data[k])) for k in ['bid1','ask1','fairPrice','lastPrice'])<=0 or Decimal(str(data['ask1']))<Decimal(str(data['bid1'])):raise ExchangeFailure('Invalid futures ticker prices')
-        if not -5<=time.time()-int(data['timestamp'])/1000<=15:raise ExchangeFailure('Stale/future futures ticker')
-        return data
+        return self.validate_ticker(data,symbol)
     async def depth(self,symbol):
         data=await self.request('GET','/api/v1/contract/depth/'+valid_symbol(symbol),{'limit':20})
         return json_safe({'symbol':symbol,'source':'mexc-futures','received_at':time.time(),'bids':data['bids'],'asks':data['asks'],'timestamp':data.get('timestamp')})

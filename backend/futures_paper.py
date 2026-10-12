@@ -105,7 +105,11 @@ def close_paper(db,owner,position_id,fraction,client_id,cause='owner_close'):
     payload={'schema_version':1,'client_id':client_id,'fingerprint':request_hash,'symbol':p.symbol,'position_id':p.id,'cause':cause,
              'contracts':str(vol),'realized_net':str(gross-fee),'round_trip_net':str(gross-fee-entry_fee),
              'exit_fee':str(fee),'allocated_entry_fee':str(entry_fee),'paper':True}
-    record(db,owner,'futures_paper_fill',payload);record(db,owner,'trade_evaluation',payload);db.flush();return payload
+    record(db,owner,'futures_paper_fill',payload);record(db,owner,'trade_evaluation',payload);db.flush()
+    if ratio==1:
+        from backend.learning import completed
+        completed(db,owner,p.id,d)
+    return payload
 
 def manage(db,owner):
     db.scalar(select(User).where(User.id==owner).with_for_update().execution_options(populate_existing=True))

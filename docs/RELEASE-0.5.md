@@ -1,0 +1,19 @@
+# ZEN 0.5 — adaptive paper research desk
+
+The former single narrow breakout trial and three-symbol futures list caused sparse signals. 0.5 discovers the active, supported MEXC USDT perpetual catalogue, validates a bulk ticker feed, and rotates candle research through liquid API-eligible markets (at least 1M reported 24h turnover, spread <=30bps). All discovered markets with valid quotes are searchable; thin, unsupported, stale or API-disabled instruments are excluded from automatic entry. Held positions retain exit handling. Discovery is not a guarantee of private account eligibility.
+
+Aggressive and Balanced are explicit PAPER presets on Home. Aggressive enables automated paper futures at a 5x ceiling, 3 USDT maximum margin, 80 USDT maximum total notional, 3 positions, 2 USDT loss per trade, 6 USDT daily loss and 20 USDT drawdown. Balanced uses 1x/40 USDT/2 positions. Neither requires exchange credentials; these presets do not authorize live trading. Profile and automation survive authentication/session changes. Stop/pause controls remain independent.
+
+Research compares momentum, pullback and range-reversion hypotheses, costs, regime, volatility and mark divergence. Heuristic scores are NOT calibrated win probabilities. Paper outcomes after both-side fees update bounded strategy/regime preferences; adjustments need five completed exposures, are capped at ±0.25, and repeated losses suspend a strategy/regime. A partial close contributes only when the entire position is closed, avoiding duplicate training samples. Every update records old/new weights and a version. History window is 250 completed positions; full audit history is retained. No claim that every update improves performance.
+
+GET /agent/research and snapshot.research include catalogue/freshness counts, scan summaries, candidate rankings, execution states, top WAIT/veto reasons and learning outcomes. POST /agent/paper-profile selects an explicit preset. Paper executions annotate strategy/regime/risk context for completed-position learning.
+
+A new native desk replaces the old Home hero and Agent layouts, with a paper profile studio, expandable real portfolio breakdown, compact instrument rows, liquidity/gainer/watchlist filters, an opportunity tape and learning journal. Prices below one cent retain precision. No synthetic performance exists in the app; screenshots from instrumentation use labelled test fixtures only.
+
+Observer polling and protective exits run independently from slower candle research. Bounded concurrent candle reads and a rotating universe prevent all-pair API request floods. Full catalogue/state discovery runs approximately every five minutes; quote cycles target five seconds but network/database delays can extend them. Research batches repeat approximately every 30 seconds plus retrieval time. It is not high-frequency execution.
+
+research/replay.py provides reproducible chronological train/out-of-sample reporting against a frozen preference baseline, conservative fees/spread/slippage and stop-first ambiguous bars. Funding settlement, tick-level historical liquidity and open unrealized exposure are not modeled in that replay. It cannot authorize live promotion. Evidence and actual results are recorded separately after execution.
+
+Remaining: private exchange execution certification, native protective-order reconciliation, complete funding accounting, additional exchange futures adapters, broader walk-forward/shadow validation and production signing. Not 5x profitability/accuracy; no guaranteed improvement or daily return. All supported pairs refers to supported USDT-settled perpetuals, not every derivative product on every exchange.
+
+Operational limit: full decisions and learning history grow PostgreSQL storage. Monitor capacity and configure archival/backups before prolonged production use; small free/dev volumes are not unlimited historical storage.

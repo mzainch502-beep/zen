@@ -16,6 +16,8 @@ class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false) 
     val calls=java.util.Collections.synchronizedList(mutableListOf<String>())
     private var mode=if(live) "Paused" else "Paper"
     private var automatic=false
+    private var profile="balanced"
+    var profileBody: JSONObject? = null
     var futuresBody: JSONObject? = null
     override suspend fun call(path: String,method: String,body: JSONObject?): String {
         calls.add("$method $path")
@@ -23,11 +25,12 @@ class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false) 
             path=="/auth/login" -> """{"token":"instrumentation-only-session"}"""
             path=="/futures/settings" -> {futuresBody=body;"""{"saved":true}"""}
             path=="/auth/logout" -> """{"revoked":true}"""
+            path=="/agent/paper-profile" -> {profileBody=body;profile=body!!.getString("profile");automatic=true;"{}"}
             path=="/agent/automation" -> {automatic=body!!.getBoolean("enabled");"{}"}
             path=="/agent/mode" -> {mode=body!!.getString("mode");"""{"mode":"$mode"}"""}
             path=="/health" -> """{"status":"ok","worker_online":true,"live_execution":false}"""
             path=="/markets" -> """[{"stale":false,"quote":{"symbol":"BTC/USDT","last":"102425.25","bid":"102425.2","ask":"102425.3","change_percent":"0.4","source":"instrumentation-fixture"}},{"stale":false,"quote":{"symbol":"ETH/USDT","last":"3402.15","bid":"3402.1","ask":"3402.2","change_percent":"-0.7","source":"instrumentation-fixture"}}]"""
-            path=="/snapshot" -> """{"automation":{"enabled":$automatic,"requested":$automatic,"can_enable":${!live},"product":"spot","blocked_reason":${if(live) "\"Live strategy validation pending\"" else "null"}},"account":{"email":"qa-owner@example.invalid"},"futures":{"activated":$live},"portfolio":{"paper":${!live},"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
+            path=="/snapshot" -> """{"research":{"profile":"$profile","catalogue_count":200,"recent_evaluations":12,"learning":{"samples":0,"status":"collecting outcomes","version":"contextual-paper-v2"}},"automation":{"enabled":$automatic,"requested":$automatic,"can_enable":${!live},"product":"spot","blocked_reason":${if(live) "\"Live strategy validation pending\"" else "null"}},"account":{"email":"qa-owner@example.invalid"},"futures":{"activated":$live},"portfolio":{"paper":${!live},"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
             path.startsWith("/candles") -> """{"candles":[[1700000000000,100,102,99,101,1000],[1700000300000,101,103,100,102,1200]]}"""
             path.startsWith("/market-depth") -> """{"source":"instrumentation-fixture","bids":[[100,1]],"asks":[[101,1]]}"""
             path=="/audit/export" -> "[]"
@@ -109,6 +112,19 @@ class NavigationTest {
         compose.onNodeWithTag("automatic-trading-switch").performClick()
         compose.waitUntil(10000) {fixture.calls.count {it=="PUT /agent/automation"}==2}
         compose.onNodeWithTag("automatic-trading-switch").assertIsOff()
+    }
+    @Test fun aggressiveProfileIsExplicitAndSentToBackend() {
+        val fixture=FixtureRepository()
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithText("Aggressive").performScrollTo().performClick()
+        compose.onNodeWithText("Start paper").performClick()
+        compose.waitUntil(10000) {fixture.calls.contains("POST /agent/paper-profile")}
+        org.junit.Assert.assertEquals("aggressive",fixture.profileBody?.getString("profile"))
+        compose.onNodeWithTag("automatic-trading-switch").assertIsOn()
+        compose.onNodeWithTag("nav-AGENT").performClick()
+        compose.onNodeWithText("Learning journal").performScrollTo().assertExists()
+        capture("learning-desk")
     }
     @Test fun pausedLiveWorkspaceKeepsLiveLabel() {
         val fixture=FixtureRepository(live=true)

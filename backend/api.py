@@ -34,7 +34,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.4.2')
+    app=FastAPI(title='ZEN Paper API',version='0.5.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -66,8 +66,8 @@ def create_app(database=None):
         executor=db.scalar(select(Record).where(Record.kind=='executor_heartbeat').order_by(Record.created.desc()).limit(1))
         from database.models import FuturesMarket
         futures_markets=list(db.scalars(select(FuturesMarket)))
-        public=[{'symbol':m.symbol,'max_leverage':m.contract.get('maxLeverage'),'api_allowed':m.contract.get('apiAllowed'),'fresh':time.time()-m.received<15} for m in futures_markets]
-        return {'status':'ok','live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
+        public=[{'symbol':m.symbol,'max_leverage':m.contract.get('maxLeverage'),'api_allowed':m.contract.get('apiAllowed'),'fresh':time.time()-m.received<15} for m in futures_markets[:20]]
+        return {'status':'ok','live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'futures_catalogue_count':len(futures_markets),'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
     @app.post('/auth/setup')
     def setup(body: Setup,db=Depends(db_dep)):
         login_budget()
@@ -107,8 +107,9 @@ def create_app(database=None):
         from backend.futures_domain import FuturesLimits
         cfg=config(db,u.id)
         future=live_snapshot(db,u.id) if cfg.live_connection_id and cfg.activated and cfg.workspace=='futures' else account(db,u.id) if cfg.workspace=='futures' else None
+        from backend.research_status import status as research_status
         from backend.automation import status as automation_status
-        return {'automation':automation_status(db,u),'account':{'email':u.email},
+        return {'research':research_status(db,u.id),'automation':automation_status(db,u),'account':{'email':u.email},
             'agent':{'action':latest.get('action','WAIT'),'version':latest.get('version','research-v1'),
                      'automated_paper':automation_status(db,u)['enabled'],'research_trial':True,
                      'summary':'Continuous experimental paper scanner · unvalidated strategy',
@@ -123,11 +124,13 @@ def create_app(database=None):
         from backend.futures_paper import config
         if config(db,u.id).workspace=='futures':
             from database.models import FuturesMarket
-            return [{'quote':{'symbol':m.symbol,'bid':m.ticker['bid1'],'ask':m.ticker['ask1'],'last':m.ticker['lastPrice'],'timestamp':int(m.ticker['timestamp'])/1000,'source':'mexc-futures','change_percent':str(Decimal(str(m.ticker.get('riseFallRate',0)))*100)},'stale':time.time()-m.received>15,'product':'futures','contract':m.contract,'ticker':m.ticker} for m in db.scalars(select(FuturesMarket))]
+            return [{'quote':{'symbol':m.symbol,'bid':m.ticker['bid1'],'ask':m.ticker['ask1'],'last':m.ticker['lastPrice'],'timestamp':int(m.ticker['timestamp'])/1000,'source':'mexc-futures','change_percent':str(Decimal(str(m.ticker.get('riseFallRate',0)))*100)},'stale':time.time()-m.received>15,'product':'futures','contract':{k:m.contract.get(k) for k in ['maxLeverage','minLeverage','contractSize','minVol','apiAllowed','state']},'ticker':{k:m.ticker.get(k) for k in ['fundingRate','holdVol','amount24','high24Price','lower24Price','fairPrice']}} for m in db.scalars(select(FuturesMarket).where(FuturesMarket.contract['state'].as_integer()==0).order_by(FuturesMarket.symbol))]
         return [{'quote':m.payload,'stale':time.time()-m.received>15} for m in db.scalars(select(Market))]
     @app.get('/candles')
-    async def candles(symbol: str='BTC/USDT',timeframe: str='1m',u=Depends(owner)):
-        if symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']:
+    async def candles(symbol: str='BTC/USDT',timeframe: str='1m',u=Depends(owner),db=Depends(db_dep)):
+        if __import__('re').fullmatch(r'[A-Z0-9]{2,20}_USDT',symbol):
+            from database.models import FuturesMarket
+            if not db.get(FuturesMarket,symbol):raise HTTPException(404,'Contract not discovered by observer')
             from exchange_adapters.mexc_futures import MexcFutures
             a=MexcFutures()
             try:return {'symbol':symbol,'timeframe':timeframe,'candles':await a.candles(symbol,timeframe,200)}
@@ -140,8 +143,10 @@ def create_app(database=None):
         except Exception: raise HTTPException(503,'Exchange candles unavailable')
         finally: await a.close()
     @app.get('/market-depth')
-    async def market_depth(symbol: str='BTC/USDT',u=Depends(owner)):
-        if symbol in ['BTC_USDT','ETH_USDT','SOL_USDT']:
+    async def market_depth(symbol: str='BTC/USDT',u=Depends(owner),db=Depends(db_dep)):
+        if __import__('re').fullmatch(r'[A-Z0-9]{2,20}_USDT',symbol):
+            from database.models import FuturesMarket
+            if not db.get(FuturesMarket,symbol):raise HTTPException(404,'Contract not discovered by observer')
             from exchange_adapters.mexc_futures import MexcFutures
             a=MexcFutures()
             try:return await a.depth(symbol)
