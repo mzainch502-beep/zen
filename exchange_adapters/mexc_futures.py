@@ -60,10 +60,18 @@ class MexcFutures:
         if abs(self.offset)>30000:raise ExchangeFailure('Clock offset outside operational envelope')
     async def contracts(self,symbol=None):
         data=await self.request('GET','/api/v1/contract/detail/country',{'symbol':valid_symbol(symbol)} if symbol else {})
-        return data if isinstance(data,list) else [data]
+        rows=data if isinstance(data,list) else [data]
+        if symbol:
+            rows=[row for row in rows if row.get("symbol")==symbol]
+            if not rows:raise ExchangeFailure("Requested contract missing from metadata")
+        return rows
     async def ticker(self,symbol):
         data=await self.request('GET','/api/v1/contract/ticker',{'symbol':valid_symbol(symbol)})
-        data=data[0] if isinstance(data,list) else data
+        if isinstance(data,list):
+            matches=[row for row in data if row.get('symbol')==symbol]
+            if not matches:raise ExchangeFailure('Requested ticker missing')
+            data=matches[0]
+        if data.get('symbol')!=symbol:raise ExchangeFailure('Ticker symbol mismatch')
         if min(Decimal(str(data[k])) for k in ['bid1','ask1','fairPrice','lastPrice'])<=0 or Decimal(str(data['ask1']))<Decimal(str(data['bid1'])):raise ExchangeFailure('Invalid futures ticker prices')
         if not -5<=time.time()-int(data['timestamp'])/1000<=15:raise ExchangeFailure('Stale/future futures ticker')
         return data

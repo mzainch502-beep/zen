@@ -54,7 +54,7 @@ async def process(db,connection,a,intent_id):
             if not position:raise Rejected('Position no longer open')
             vol=contract.round_vol(D(position['holdVol'])*D(source['fraction']))
             if vol<=0 or vol>D(position['holdVol']):raise Rejected('Reduction quantity invalid')
-            payload={'symbol':symbol,'price':Decimal(0),'vol':vol,'side':4 if position['positionType']==1 else 2,
+            payload={'symbol':symbol,'price':contract.round_price(D(ticker['bid1'] if position['positionType']==1 else ticker['ask1'])),'vol':vol,'side':4 if position['positionType']==1 else 2,
                      'type':5,'openType':int(position['openType']),'positionId':int(position['positionId']),
                      'positionMode':2,'reduceOnly':True,'externalOid':client_id}
         else:
@@ -68,13 +68,14 @@ async def process(db,connection,a,intent_id):
             contract=contract.model_copy(update={'max_leverage':min(contract.max_leverage,cap),
                 'taker_fee':max(contract.taker_fee,fee),
                 'mmr':max(contract.mmr,*[D(r['mmr']) for r in risks]),
+                'imr':max(contract.imr,*[D(r.get('imr',0)) for r in risks]),
                 'max_vol':min(contract.max_vol,*[D(r['maxVol']) for r in risks])})
             if any(D(p['holdVol'])>0 for p in account['positions']):
                 # Until multi-symbol mark reconciliation is complete, fail closed.
                 raise Rejected('Only one live symbol at a time in this release')
             asset=account['asset'];eq=D(asset['equity']);daily=min(Decimal(0),eq-D(account['day_start_equity']))
             d=plan(FuturesProposal.model_validate(source['proposal']),contract,ticker,limits,D(asset['availableBalance']),eq,Decimal(0),0,daily,D(account['high_water']),time.time())
-            payload={'symbol':symbol,'price':Decimal(0),'vol':d['contracts'],'leverage':d['leverage'],
+            payload={'symbol':symbol,'price':contract.round_price(D(ticker['ask1'] if d['direction']=='LONG' else ticker['bid1'])),'vol':d['contracts'],'leverage':d['leverage'],
                      'side':1 if d['direction']=='LONG' else 3,'type':5,'openType':1,'positionMode':2,
                      'externalOid':client_id,'stopLossPrice':d['stop'],'takeProfitPrice':d['take_profit'],'lossTrend':2,'profitTrend':2}
         with db.sessions() as s:
@@ -85,6 +86,7 @@ async def process(db,connection,a,intent_id):
             current=s.get(User,connection.user_id)
             if not reduction and current.mode!='Live':raise Rejected('Execution paused before submission')
         response=await a.submit(payload)
+        if not isinstance(response,dict) or not response.get('orderId'):raise UnknownSubmission('Acknowledgment cannot be identified safely')
         with db.sessions() as s:
             i=s.get(FuturesIntent,intent_id);i.state='acknowledged';i.updated=time.time();i.receipt=json_safe(response)
             record(s,i.user_id,'live_acknowledgment',{'intent_id':i.id,'order_id':str(response['orderId']),

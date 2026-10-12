@@ -134,7 +134,7 @@ def test_live_long_short_wire_protection_and_acknowledgment(world):
   with db.sessions() as s:i=enqueue(s,u,p,conn.id);s.commit();iid=i.id
   asyncio.run(process(db,conn,adapter,iid));asyncio.run(process(db,conn,adapter,iid))
   assert len(adapter.writes)==1;wire=adapter.writes[0]
-  assert wire['side']==side and wire['positionMode']==2 and wire['openType']==1
+  assert wire['side']==side and wire['positionMode']==2 and wire['openType']==1 and wire['price']>0
   assert wire['stopLossPrice']>0 and wire['takeProfitPrice']>0 and wire['externalOid']==p.idempotency_key
   with db.sessions() as s:
    assert s.get(FuturesIntent,iid).state=='acknowledged'
@@ -169,3 +169,9 @@ def test_public_contract_data_does_not_expose_accounts(world):
  assert len(r.json())==1 and r.json()[0]['source']=='mexc-futures'
  assert 'futures@test.invalid' not in r.text and 'password' not in r.text
  assert c.get('/futures/settings').status_code==401
+
+
+def test_initial_margin_and_product_symbol_fail_closed():
+ with pytest.raises(Rejected,match='initial margin'):make_plan(c=Contract.parse({**meta(),'initialMarginRate':'.3'}))
+ with pytest.raises(Rejected,match='symbol'):make_plan(c=Contract.parse({**meta(),'symbol':'SOL_USDT'}))
+ with pytest.raises(ValueError):Contract.parse({**meta(),'futureType':2})
