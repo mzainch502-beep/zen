@@ -14,7 +14,7 @@ Every worker pass checks fresh bid prices for stops and targets. Automatic entri
 
 ## Evidence and limitations
 
-- Local test run: 54 passed, one PostgreSQL-only test skipped locally. GitHub CI runs PostgreSQL migration/concurrency validation separately.
+- Local test run: 54 passed, two PostgreSQL-only tests skipped locally. GitHub CI runs PostgreSQL migration/concurrency validation separately.
 - Synthetic fixtures exercise automatic entry, subsequent real-time-style TP close, repeat-bar/restart duplicate prevention, paused/emergency veto, maximum-hold close, fee accounting, stale exits and historical chronology/cost behavior. Synthetic gains are not strategy results.
 - Real Bitget BTC/ETH/SOL observations are in `autonomous-public-observation.json`. The sampled market produced WAIT; no live orders or forced paper entries were placed.
 - `autonomous-historical-replay.json` retains 999 real completed BTC 1m candles and chronological holdout summaries. This narrow sample produced zero closed trades and zero P&L. It establishes neither profitability nor validation; no model was promoted.
