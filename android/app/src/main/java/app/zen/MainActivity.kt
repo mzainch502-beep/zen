@@ -81,12 +81,12 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                 }
             }
         },bottomBar={
-            if(c.authorized) NavigationBar(modifier=Modifier.padding(horizontal=12.dp).clip(RoundedCornerShape(24.dp)).border(.7.dp,ZenColors.Border,RoundedCornerShape(24.dp)),containerColor=ZenColors.Surface,tonalElevation=0.dp) {
+            if(c.authorized) Box(Modifier.navigationBarsPadding().padding(bottom=8.dp)) { NavigationBar(windowInsets=WindowInsets(0,0,0,0),modifier=Modifier.padding(horizontal=12.dp).clip(RoundedCornerShape(24.dp)).border(.7.dp,ZenColors.Border,RoundedCornerShape(24.dp)),containerColor=ZenColors.Surface,tonalElevation=0.dp) {
                 ZenTab.entries.forEach { page -> NavigationBarItem(modifier=Modifier.testTag("nav-"+page.name),selected=tab==page,onClick={tab=page;market=null},
                     icon={Icon(when(page) {ZenTab.HOME->Icons.Rounded.SpaceDashboard;ZenTab.MARKETS->Icons.Rounded.ShowChart;ZenTab.AGENT->Icons.Rounded.Psychology;ZenTab.POSITIONS->Icons.Rounded.Layers;ZenTab.SETTINGS->Icons.Rounded.Tune},contentDescription=null)},
                     label={Text(page.label,style=MaterialTheme.typography.labelSmall)},
                     colors=NavigationBarItemDefaults.colors(selectedIconColor=ZenColors.Emerald,selectedTextColor=ZenColors.Text,indicatorColor=ZenColors.Raised,unselectedIconColor=ZenColors.Muted,unselectedTextColor=ZenColors.Muted)) }
-            }
+            }}
         }) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 if(c.loading) LinearProgressIndicator(Modifier.fillMaxWidth(),color=ZenColors.Emerald,trackColor=ZenColors.Surface)
@@ -127,18 +127,18 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     var setup by remember {mutableStateOf(false)};var advanced by remember {mutableStateOf(false)};var server by remember {mutableStateOf(c.repository.base)}
     var passwordVisible by remember {mutableStateOf(false)}
     LaunchedEffect(c.authorized) {if(c.authorized) {password="";invite=""}}
-    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=24.dp,vertical=28.dp),verticalArrangement=Arrangement.spacedBy(24.dp)) {
+    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=24.dp,vertical=16.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
         item {
-            Spacer(Modifier.height(10.dp));Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)){ZenMark(Modifier.size(58.dp));Column {Text("ZEN",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.SemiBold);Eyebrow("Trading intelligence")}};Spacer(Modifier.height(28.dp))
-            Text("Trade with\nclarity.",style=MaterialTheme.typography.displaySmall.copy(fontSize=48.sp,lineHeight=53.sp,fontWeight=FontWeight.SemiBold))
+            Spacer(Modifier.height(4.dp));Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)){ZenMark(Modifier.size(44.dp));Column {Text("ZEN",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.SemiBold);Eyebrow("Trading intelligence")}};Spacer(Modifier.height(20.dp))
+            Text("Trade with\nclarity.",style=MaterialTheme.typography.displaySmall.copy(fontSize=40.sp,lineHeight=44.sp,fontWeight=FontWeight.SemiBold))
             Spacer(Modifier.height(12.dp))
-            Text("An independent intelligence workspace.\nBuilt around your decisions and capital.",style=MaterialTheme.typography.bodyLarge,color=ZenColors.Muted)
+            Text("Markets. Decisions. Capital.",style=MaterialTheme.typography.bodyLarge,color=ZenColors.Muted)
         }
         item {SurfaceCard {
             SectionLabel(if(setup) "Create workspace" else "Welcome back") {
                 TextButton(onClick={setup=!setup},contentPadding=PaddingValues(horizontal=8.dp)) {Text(if(setup) "Sign in" else "Create account")}
             }
-            Text(if(setup) "Use your private setup code to create the owner account." else "Sign in to your secure ZEN workspace.",color=ZenColors.Muted,style=MaterialTheme.typography.bodyMedium)
+            if(setup) Text("Use your private owner setup code.",color=ZenColors.Muted,style=MaterialTheme.typography.bodyMedium)
             ZenField("Owner email",email,{email=it},placeholder="you@example.com")
             OutlinedTextField(password,{password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth().testTag("password-input"),shape=RoundedCornerShape(12.dp),visualTransformation=if(passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),trailingIcon={IconButton(onClick={passwordVisible=!passwordVisible}){Icon(if(passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,contentDescription=if(passwordVisible) "Hide password" else "Show password")}})
             if(setup) ZenField("Setup code",invite,{invite=it},secret=true)
