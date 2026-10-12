@@ -182,3 +182,11 @@ def test_revoked_futures_connection_cannot_queue(world):
  with db.sessions() as s:
   s.get(Connection,conn.id).capabilities={'product':'futures','revoked':True};s.commit()
   with pytest.raises(Rejected,match='connection'):enqueue(s,u,proposal(),conn.id)
+
+
+def test_spot_editor_cannot_silently_change_futures_budget(world):
+ db,u,c,h=world
+ body=Limits(max_loss_trade='.1').model_dump(mode='json')
+ result=c.put('/risk',headers=h,json=body)
+ assert result.status_code==409 and 'Trading controls' in result.json()['detail']
+ with db.sessions() as s:assert FuturesLimits.model_validate(config(s,u).limits).max_loss_trade==D('2')

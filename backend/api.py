@@ -158,7 +158,11 @@ def create_app(database=None):
         raise HTTPException(409,'Live execution not implemented or certified. No order will be placed.')
     @app.put('/risk')
     def limits(body: Limits,u=Depends(owner),db=Depends(db_dep)):
-        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True)); locked.limits=body.model_dump(mode='json')
+        locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
+        from database.models import FuturesConfig
+        cfg=db.get(FuturesConfig,u.id)
+        if cfg and cfg.workspace=='futures':raise HTTPException(409,'Use Settings → Trading controls to edit futures limits. This editor applies to spot only.')
+        locked.limits=body.model_dump(mode='json')
         record(db,u.id,'risk_limits',locked.limits); db.commit(); return locked.limits
     @app.post('/paper/orders')
     def orders(body: Proposal,u=Depends(owner),db=Depends(db_dep)):
