@@ -1,0 +1,13 @@
+{
+  "health": {
+    "status": "ok",
+    "live_execution": false,
+    "worker_online": true
+  },
+  "owner_setup": {
+    "setup_available": true,
+    "initial_mode": "Paper",
+    "live_execution": false
+  },
+  "backend": "https://zen-api-production-8459.up.railway.app"
+}

@@ -1,0 +1,17 @@
+{
+  "release": "0.2.0-paper",
+  "api": "https://zen-api-production-8459.up.railway.app",
+  "source_commit": "df38f0ec51a33e13e7decde4ea86662feb7ed0d2",
+  "source_archive_sha256": "14a84558461f0f314c9527828e8d82dbd014c75bef9c7070c353056f2d4aaec7",
+  "railway_project_id": "e8ecf3b8-90a3-45de-8201-330685bee4a6",
+  "api_service_id": "821bffa6-b0df-4ffb-b42f-ff1a80eff2cb",
+  "worker_service_id": "b5114c3e-4c38-4a5e-a1c2-fdcc572a0809",
+  "postgres_service_id": "7c7860b1-75e7-4207-878b-dce60dd16362",
+  "ci_backend_run": 38206549006,
+  "ci_android_build_run": 38206549049,
+  "ci_android_ui_run": 38206549031,
+  "backend_tests_passed": 45,
+  "cloud_e2e_checks_passed": 13,
+  "live_execution": false,
+  "private_exchange_keys_validated": false
+}
