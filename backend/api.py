@@ -31,7 +31,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.2.0')
+    app=FastAPI(title='ZEN Paper API',version='0.3.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -60,7 +60,7 @@ def create_app(database=None):
     def health(db=Depends(db_dep)):
         db.execute(select(1))
         heartbeat=db.scalar(select(Record).where(Record.kind=='worker_heartbeat').order_by(Record.created.desc()).limit(1))
-        return {'status':'ok','live_execution':False,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
+        return {'status':'ok','live_execution':False,'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
     @app.post('/auth/setup')
     def setup(body: Setup,db=Depends(db_dep)):
         login_budget()
@@ -97,7 +97,8 @@ def create_app(database=None):
         latest=decisions[0].payload if decisions else {}
         return {'account':{'email':u.email},
             'agent':{'action':latest.get('action','WAIT'),'version':latest.get('version','research-v1'),
-                     'summary':'Observing market structure and execution conditions',
+                     'automated_paper':True,'research_trial':True,
+                     'summary':'Continuous experimental paper scanner · unvalidated strategy',
                      'reason':latest.get('reason','Collecting evidence. Execution strategies remain gated by validation.')},
             'portfolio':portfolio(db,u),'positions':serialize_positions(db,u),
             'limits':Limits.model_validate(u.limits).model_dump(mode='json'),

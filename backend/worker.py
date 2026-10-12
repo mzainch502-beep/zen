@@ -6,7 +6,7 @@ from database.models import Database, User, Market, Strategy, Position, record
 from backend.domain import Quote, Proposal
 from backend.service import execute, positions, portfolio, Rejected
 from exchange_adapters.ccxt_adapter import ReadAdapter, bounded_read
-from agents.pipeline import Observation, DecisionAgent
+from agents.autonomous import process_observation, manage_exits, VERSION
 import websockets
 SYMBOLS=['BTC/USDT','ETH/USDT','SOL/USDT']
 
@@ -52,7 +52,7 @@ async def run():
                     except Exception:
                         with db.sessions() as s: record(s,None,'market_error',{'symbol':symbol,'source':adapter.name});s.commit()
                 with db.sessions() as s:
-                    record(s,None,'worker_heartbeat',{'cycle':cycle,'live_enabled':False});s.commit()
+                    record(s,None,'worker_heartbeat',{'cycle':cycle,'live_enabled':False,'autonomous_paper':True,'version':VERSION});s.commit()
                     owners=list(s.scalars(select(User)))
                 for u in owners:
                     with db.sessions() as s:
@@ -62,30 +62,22 @@ async def run():
                         if cycle%12==0: record(s,u.id,'portfolio_snapshot',snap)
                         s.commit()
                     with db.sessions() as s:
-                        for p in positions(s,u.id):
-                            m=s.get(Market,p.symbol)
-                            if not m or time.time()-m.received>15: continue
-                            q=Quote.model_validate(m.payload)
-                            if (p.stop and q.bid<=p.stop) or (p.take_profit and q.bid>=p.take_profit):
-                                try:
-                                    execute(s,u.id,Proposal(symbol=p.symbol,side='sell',quantity=p.quantity,reduce_only=True,
-                                        idempotency_key='exit-'+p.id));s.commit()
-                                except Rejected as e:
-                                    s.rollback();record(s,u.id,'exit_error',{'reason':str(e),'position_id':p.id});s.commit()
+                        manage_exits(s,u.id)
+                        s.commit()
                     if cycle%12==0:
                         for symbol in SYMBOLS:
                             try:
-                                rows=await adapter.candles(symbol,'1m',100)
-                                completed=[r for r in rows if r[0]/1000+60<time.time()]
+                                rows=await bounded_read(lambda:adapter.candles(symbol,'1m',100))
+                                completed=[r for r in rows if r[0]/1000+60<=time.time()]
+                                # Refresh the execution quote after historical data retrieval.
+                                observer.store(await bounded_read(lambda:adapter.quote(symbol)))
                                 with db.sessions() as s:
-                                    m=s.get(Market,symbol)
-                                    if not m: continue
-                                    q=Quote.model_validate(m.payload)
-                                    o=Observation(symbol,tuple(float(r[4]) for r in completed),float(q.spread_bps))
-                                    decision=DecisionAgent().decide(o,list(s.scalars(select(Strategy))))
-                                    record(s,u.id,'decision',{'symbol':symbol,**decision});s.commit()
-                            except Exception:
-                                with db.sessions() as s: record(s,u.id,'research_error',{'symbol':symbol});s.commit()
+                                    process_observation(s,u.id,symbol,completed)
+                                    s.commit()
+                            except Exception as e:
+                                with db.sessions() as s:
+                                    record(s,u.id,'research_error',{'symbol':symbol,'error_type':type(e).__name__})
+                                    s.commit()
                 cycle+=1
                 await asyncio.sleep(5)
         finally:
