@@ -152,3 +152,19 @@ def test_auth_rate_limit(setup):
     db,u,c,h=setup
     for _ in range(20): c.post('/auth/login',json={'email':'bad','password':'bad'})
     assert c.post('/auth/login',json={'email':'bad','password':'bad'}).status_code==429
+
+def test_snapshot_readable_account_and_agent(setup):
+    db,u,c,h=setup
+    result=c.get('/snapshot',headers=h).json()
+    assert result['account']['email']=='owner@test.invalid'
+    assert result['agent']['action']=='WAIT'
+    assert result['agent']['version']=='research-v1'
+
+def test_depth_authenticated_and_market_allowlist(setup):
+    db,u,c,h=setup
+    assert c.get('/market-depth').status_code==401
+    assert c.get('/market-depth?symbol=BAD',headers=h).status_code==422
+
+def test_bootstrap_status_is_disabled_after_owner(setup):
+    db,u,c,h=setup
+    assert c.get('/bootstrap/status').json()['setup_available'] is False

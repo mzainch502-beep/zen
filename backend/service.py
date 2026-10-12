@@ -70,7 +70,7 @@ def execute(db,owner,p: Proposal):
     o=Order(user_id=owner,client_id=p.idempotency_key,fingerprint=fp,symbol=p.symbol,side=p.side,
             quantity=p.quantity,filled=p.quantity,price=price,fee=fee,realized=realized,state='filled')
     db.add(o); db.flush()
-    record(db,owner,'paper_fill',{'order_id':o.id,'price':str(price),'quantity':str(p.quantity),'fee':str(fee),
+    record(db,owner,'paper_fill',{'symbol':p.symbol,'side':p.side,'order_id':o.id,'price':str(price),'quantity':str(p.quantity),'fee':str(fee),
                                 'realized_gross':str(realized),'processing_ms':(time.perf_counter()-t0)*1000,
                                 'latency_type':'local paper accounting; not exchange acknowledgment'})
     snap=portfolio(db,u)

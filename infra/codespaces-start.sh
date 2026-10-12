@@ -9,3 +9,4 @@ fi
 docker compose --env-file .env -f infra/compose.yml up -d --build --wait
 echo "ZEN paper API and worker started. Open the Codespaces Ports panel for port 8080."
 echo "This is a temporary development environment, not continuous live trading hosting."
+

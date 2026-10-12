@@ -2,7 +2,7 @@ name: Android UI validation
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/android-ui.yml']
+    paths: ['android/**', '.github/workflows/android-ui.yml']
 permissions: {contents: read}
 jobs:
   ui:
@@ -23,4 +23,15 @@ jobs:
           api-level: 35
           arch: x86_64
           working-directory: android
-          script: gradle :app:connectedDebugAndroidTest
+          script: |
+            gradle :app:connectedDebugAndroidTest
+            mkdir -p ui-qa
+            adb pull /sdcard/Android/data/app.zen.intelligence/files/ui-qa ui-qa || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-UI-QA
+          path: |
+            android/ui-qa
+            android/app/build/reports/androidTests
+          if-no-files-found: warn

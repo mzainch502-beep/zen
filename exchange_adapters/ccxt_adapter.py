@@ -30,6 +30,10 @@ class ReadAdapter:
             raise ValueError('Ticker lacks timestamp or executable bid/ask')
         return Quote(symbol=symbol,bid=Decimal(str(t['bid'])),ask=Decimal(str(t['ask'])),last=Decimal(str(t['last'])),
             timestamp=t['timestamp']/1000,source=self.name,change_percent=t.get('percentage'))
+    async def depth(self,symbol):
+        book=await self.client.fetch_order_book(symbol,limit=20)
+        return {"symbol":symbol,"source":self.name,"received_at":time.time(),"timestamp":book.get("timestamp"),
+                "bids":book.get("bids",[])[:20],"asks":book.get("asks",[])[:20]}
     async def candles(self,symbol,timeframe,limit=200):
         await self.client.load_markets()
         if timeframe not in (self.client.timeframes or {}): raise ValueError('Timeframe unavailable')

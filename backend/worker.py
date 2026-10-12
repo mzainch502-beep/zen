@@ -56,6 +56,12 @@ async def run():
                     owners=list(s.scalars(select(User)))
                 for u in owners:
                     with db.sessions() as s:
+                        locked=s.scalar(select(User).where(User.id==u.id).with_for_update())
+                        snap=portfolio(s,locked)
+                        if snap['equity'] is not None: locked.high_water=max(locked.high_water,Decimal(snap['equity']))
+                        if cycle%12==0: record(s,u.id,'portfolio_snapshot',snap)
+                        s.commit()
+                    with db.sessions() as s:
                         for p in positions(s,u.id):
                             m=s.get(Market,p.symbol)
                             if not m or time.time()-m.received>15: continue

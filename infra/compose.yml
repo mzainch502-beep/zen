@@ -34,3 +34,4 @@ services:
     restart: on-failure
 volumes:
   pgdata:
+

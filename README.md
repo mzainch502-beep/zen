@@ -68,3 +68,4 @@ Public market probes do not validate private keys, regional eligibility or live 
 ## GitHub-only temporary backend testing
 
 A Codespaces configuration is included. From Android, select Code → Codespaces → Create codespace on main. PostgreSQL, API and paper worker start through Docker Compose. See [phone-only setup and limitations](docs/CODESPACES.md). This does not provide continuous production trading hosting.
+

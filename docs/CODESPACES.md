@@ -37,3 +37,4 @@ Official references:
 - https://docs.github.com/en/billing/concepts/product-billing/github-codespaces
 
 Validation: JSON and shell syntax plus secret-generation/restart handling checked locally. Docker/Codespaces provisioning has not been executed by the agent; create the Codespace to validate the full startup in your account.
+

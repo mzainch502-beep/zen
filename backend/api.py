@@ -31,7 +31,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.1.0')
+    app=FastAPI(title='ZEN Paper API',version='0.2.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -66,6 +66,9 @@ def create_app(database=None):
         login_budget()
         expected=os.getenv('BOOTSTRAP_TOKEN','')
         if len(expected)<16 or not secrets.compare_digest(expected,body.setup_token): raise HTTPException(403,'Invalid or disabled setup token')
+        if database.engine.dialect.name=='postgresql':
+            from sqlalchemy import text
+            db.execute(text('SELECT pg_advisory_xact_lock(937413)'))
         if db.scalar(select(User).limit(1)): raise HTTPException(409,'Owner already provisioned; setup disabled')
         try: encoded=password_hash(body.password)
         except ValueError as e: raise HTTPException(422,str(e))
@@ -84,10 +87,19 @@ def create_app(database=None):
     def logout(u=Depends(owner),authorization: str=Header(),db=Depends(db_dep)):
         db.execute(delete(Session).where(Session.token_hash==digest(authorization.removeprefix('Bearer ')))); db.commit()
         return {'revoked':True}
+    @app.get('/bootstrap/status')
+    def bootstrap_status(db=Depends(db_dep)):
+        return {'setup_available':bool(len(os.getenv('BOOTSTRAP_TOKEN',''))>=16 and not db.scalar(select(User).limit(1))), 'live_execution':False}
     @app.get('/snapshot')
     def snapshot(u=Depends(owner),db=Depends(db_dep)):
         events=list(db.scalars(select(Record).where(Record.user_id==u.id).order_by(Record.created.desc()).limit(30)))
-        return {'portfolio':portfolio(db,u),'positions':serialize_positions(db,u),
+        decisions=[e for e in events if e.kind=='decision']
+        latest=decisions[0].payload if decisions else {}
+        return {'account':{'email':u.email},
+            'agent':{'action':latest.get('action','WAIT'),'version':latest.get('version','research-v1'),
+                     'summary':'Observing market structure and execution conditions',
+                     'reason':latest.get('reason','Collecting evidence. Execution strategies remain gated by validation.')},
+            'portfolio':portfolio(db,u),'positions':serialize_positions(db,u),
             'limits':Limits.model_validate(u.limits).model_dump(mode='json'),
             'events':[{'id':e.id,'kind':e.kind,'created':e.created,'payload':e.payload} for e in events],
             'connections':[{'id':c.id,'exchange':c.exchange,'capabilities':c.capabilities} for c in db.scalars(select(Connection).where(Connection.user_id==u.id))]}
@@ -101,6 +113,13 @@ def create_app(database=None):
         a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         try: return {'symbol':symbol,'timeframe':timeframe,'candles':await a.candles(symbol,timeframe)}
         except Exception: raise HTTPException(503,'Exchange candles unavailable')
+        finally: await a.close()
+    @app.get('/market-depth')
+    async def market_depth(symbol: str='BTC/USDT',u=Depends(owner)):
+        if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT']: raise HTTPException(422,'Unsupported market')
+        a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
+        try: return await a.depth(symbol)
+        except Exception: raise HTTPException(503,'Order book currently unavailable')
         finally: await a.close()
     @app.post('/agent/mode')
     def mode(body: Command,u=Depends(owner),db=Depends(db_dep)):
