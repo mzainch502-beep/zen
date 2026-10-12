@@ -1,0 +1,71 @@
+{
+  "release": "0.4.0",
+  "backend_source_commit": "46dd1d6495e9ceeda9f2ad86cfe7e3c0649f9b7d",
+  "android_source_commit": "019a2ffe577f68c2cdd41d5d25af6f0e69ca0f40",
+  "backend_tests_passed": 80,
+  "android_tests_passed": 3,
+  "backend_workflow_run": 38251679737,
+  "android_build_run": 38248527561,
+  "android_ui_run": 38248527494,
+  "apk_sha256": "6748b7bd33af1cb1c4315f3fb5b0ec4b96bf88e64496aa4ec73cfea397e54fe9",
+  "api": "https://zen-api-production-8459.up.railway.app",
+  "services": [
+    {
+      "name": "zen-executor",
+      "state": "online",
+      "deployment_id": "3f600d09-8b73-440d-bd1e-dc32396a9fa6",
+      "status": "SUCCESS"
+    },
+    {
+      "name": "zen-worker",
+      "state": "online",
+      "deployment_id": "6d493262-25de-45ce-b2f4-0d24c1df6cbb",
+      "status": "SUCCESS"
+    },
+    {
+      "name": "zen-api",
+      "state": "online",
+      "deployment_id": "dbf6764a-60a9-4a6f-8d1a-fdc1a981ed7a",
+      "status": "SUCCESS"
+    },
+    {
+      "name": "Postgres",
+      "state": "online",
+      "deployment_id": "97beb124-5133-43cb-9c7c-e3ee0737cf3d",
+      "status": "SUCCESS"
+    }
+  ],
+  "public_contract_observations": {
+    "BTC_USDT": {
+      "max_leverage": 500,
+      "api_allowed": true
+    },
+    "ETH_USDT": {
+      "max_leverage": 500,
+      "api_allowed": true
+    },
+    "SOL_USDT": {
+      "max_leverage": 300,
+      "api_allowed": true
+    }
+  },
+  "isolated_paper_smoke": {
+    "starting_simulated_equity": "3",
+    "direction": "SHORT",
+    "symbol": "BTC_USDT",
+    "simulated_notional": "8.2797120",
+    "ending_simulated_cash": "2.970373578168",
+    "net_pnl": "-0.029626421832",
+    "real_orders_sent": 0,
+    "private_credentials_used": false,
+    "production_owner_modified": false
+  },
+  "private_order_acceptance_validated": false,
+  "autonomous_live_strategy_validated": false,
+  "limitations": [
+    "Paper funding settlement not implemented",
+    "Manual live native order acceptance remains untested",
+    "Hedge and cross-margin execution not certified",
+    "Autonomous live strategy promotion remains gated"
+  ]
+}
