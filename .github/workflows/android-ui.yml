@@ -1,5 +1,8 @@
 name: Android UI validation
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/android-ui.yml']
 permissions: {contents: read}
 jobs:
   ui:

@@ -1,0 +1,37 @@
+{
+  "test": "real-quote-paper-ledger",
+  "exchange": "bitget",
+  "quote": {
+    "symbol": "BTC/USDT",
+    "bid": "83632.26",
+    "ask": "83632.27",
+    "last": "83632.27",
+    "timestamp": 1791776996.735,
+    "source": "bitget",
+    "change_percent": "0.866"
+  },
+  "buy": {
+    "price": "83715.90227",
+    "fee": "0.0100099104344239"
+  },
+  "sell": {
+    "price": "83548.62774",
+    "fee": "0.0099899094188718"
+  },
+  "portfolio": {
+    "equity": "199.9599991645946043",
+    "cash": "199.9599991645946043",
+    "unrealized": "0",
+    "daily_net": "-0.04000083540539641742",
+    "fees": "0.0199998198532957",
+    "funding": "0",
+    "target": "25",
+    "target_label": "Aspirational",
+    "mode": "Paper",
+    "stale": false,
+    "paper": true,
+    "exposure": "0",
+    "net_pnl": "-0.0400008354053957"
+  },
+  "real_exchange_orders_sent": 0
+}
