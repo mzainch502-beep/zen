@@ -15,10 +15,12 @@ class FixtureRepository(signedIn: Boolean=true) : ZenRepository {
     override var token=if(signedIn) "instrumentation-only-session" else ""
     val calls=java.util.Collections.synchronizedList(mutableListOf<String>())
     private var mode="Paper"
+    var futuresBody: JSONObject? = null
     override suspend fun call(path: String,method: String,body: JSONObject?): String {
         calls.add("$method $path")
         return when {
             path=="/auth/login" -> """{"token":"instrumentation-only-session"}"""
+            path=="/futures/settings" -> {futuresBody=body;"""{"saved":true}"""}
             path=="/auth/logout" -> """{"revoked":true}"""
             path=="/agent/mode" -> {mode=body!!.getString("mode");"""{"mode":"$mode"}"""}
             path=="/health" -> """{"status":"ok","worker_online":true,"live_execution":false}"""
@@ -74,7 +76,23 @@ class NavigationTest {
         compose.onNodeWithText("No open positions").assertExists();capture("positions")
         compose.onNodeWithTag("nav-SETTINGS").performClick()
         compose.onNodeWithText("Workspace").assertExists();capture("settings")
-        compose.onNodeWithText("Risk limits").performClick()
-        compose.onNodeWithText("Loss per trade · USDT").assertExists()
+        compose.onNodeWithText("Risk limits").performScrollTo().performClick()
+        compose.onNodeWithText("Loss per trade · USDT").assertExists();capture("risk")
     }
+    @Test fun futuresControlsSendExplicitConfiguration() {
+        val fixture=FixtureRepository()
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithTag("nav-SETTINGS").performClick()
+        compose.onNodeWithText("Trading controls").performScrollTo().performClick()
+        compose.onNodeWithText("Perpetual futures").performClick()
+        compose.onNodeWithTag("field-Leverage ceiling · ×").performScrollTo().performTextClearance()
+        compose.onNodeWithTag("field-Leverage ceiling · ×").performTextInput("10")
+        capture("futures-controls")
+        compose.onNodeWithText("Save trading controls").performScrollTo().performClick()
+        compose.waitUntil(10000) {fixture.calls.contains("PUT /futures/settings")}
+        org.junit.Assert.assertEquals("futures",fixture.futuresBody?.getString("workspace"))
+        org.junit.Assert.assertEquals(10,fixture.futuresBody?.getJSONObject("limits")?.getInt("max_leverage"))
+    }
+
 }

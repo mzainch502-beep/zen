@@ -44,3 +44,25 @@ def test_concurrent_autonomous_bar_once():
     with db.sessions() as s:
         assert s.scalar(select(func.count()).select_from(Order).where(Order.user_id==owner))==1
         assert s.scalar(select(func.count()).select_from(Record).where(Record.user_id==owner,Record.kind=='decision'))==1
+
+@pytest.mark.skipif(not os.getenv('TEST_POSTGRES_URL'),reason='PostgreSQL service not configured')
+def test_concurrent_futures_paper_client_id_once():
+    import time
+    from test_futures import meta,tick,proposal
+    from backend.futures_paper import config,book,execute_paper
+    from backend.futures_domain import FuturesLimits
+    from database.models import FuturesMarket,FuturesPaperPosition,Record
+    from sqlalchemy import func
+    db=Database(os.environ['TEST_POSTGRES_URL']);db.create_dev()
+    with db.sessions() as s:
+        u=User(email='futures-concurrency@test.invalid',password=password_hash('long-test-password'),mode='Paper',limits=Limits().model_dump(mode='json'))
+        s.add(u);s.flush();cfg=config(s,u.id);cfg.workspace='futures';cfg.limits=FuturesLimits(max_leverage=10).model_dump(mode='json')
+        b=book(s,u.id);b.cash=b.high_water=b.initial_equity=Decimal('3')
+        s.merge(FuturesMarket(symbol='BTC_USDT',contract=meta(),ticker=tick(),received=time.time()));s.commit();owner=u.id
+    def place():
+        with db.sessions() as s:r=execute_paper(s,owner,proposal());s.commit();return r['position_id']
+    with ThreadPoolExecutor(max_workers=4) as pool:ids=list(pool.map(lambda _:place(),range(4)))
+    assert len(set(ids))==1
+    with db.sessions() as s:
+        assert s.scalar(select(func.count()).select_from(FuturesPaperPosition).where(FuturesPaperPosition.user_id==owner))==1
+        assert s.scalar(select(func.count()).select_from(Record).where(Record.user_id==owner,Record.kind=='futures_paper_fill'))==1

@@ -127,7 +127,7 @@ import java.util.UUID
     val value=dollars.toBigDecimalOrNull()
     val qty=if(price!=null && price.signum()>0 && value!=null) value.divide(price,8,RoundingMode.DOWN) else null
     val valid=qty!=null && qty.signum()>0 && stop.toBigDecimalOrNull()?.signum()==1 && (take.isBlank() || take.toBigDecimalOrNull()?.signum()==1)
-    ModalBottomSheet(onDismissRequest=onDismiss,containerColor=ZenColors.Surface,shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp)) {
+    ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface,shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
             SectionLabel("Paper order") {StatusPill("LONG · SPOT")}
             Text(symbol,style=MaterialTheme.typography.headlineMedium)
@@ -159,7 +159,7 @@ import java.util.UUID
         val body=JSONObject().put("symbol",p.getString("symbol")).put("side","sell").put("quantity",qty.toPlainString()).put("reduce_only",true).put("idempotency_key",UUID.randomUUID().toString())
         onConfirm(Confirmation(if(fraction=="1") "Close position" else "Reduce position","Sell ${qty.stripTrailingZeros().toPlainString()} ${p.getString("symbol").substringBefore('/')} from this paper position. The exit cannot increase exposure.",if(fraction=="1") "Close position" else "Reduce",fraction=="1") {c.order(body)})
     }
-    ModalBottomSheet(onDismissRequest=onDismiss,containerColor=ZenColors.Surface) {
+    ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
             SectionLabel(p.getString("symbol")) {StatusPill("LONG · PAPER")}
             Text(signedMoney(p.value("unrealized")),style=MaterialTheme.typography.headlineMedium,color=pnlColor(p.value("unrealized")))
@@ -186,7 +186,7 @@ import java.util.UUID
 @Composable fun RiskSheet(c: ZenController,onDismiss: ()->Unit) {
     val fields=listOf("max_loss_trade" to "Loss per trade · USDT","max_daily_loss" to "Daily loss limit · USDT","max_notional" to "Total exposure · USDT","max_drawdown" to "Maximum drawdown · USDT","max_positions" to "Simultaneous positions","max_spread_bps" to "Maximum spread · bps","max_slippage_bps" to "Modeled slippage · bps","max_order_rate" to "Orders per minute","cooldown_seconds" to "Loss cooldown · seconds")
     val values=remember {mutableStateMapOf<String,String>().apply {fields.forEach {(key,_)->put(key,c.limits.value(key).orEmpty())}}}
-    ModalBottomSheet(onDismissRequest=onDismiss,containerColor=ZenColors.Surface) {
+    ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Text("Risk limits",style=MaterialTheme.typography.headlineMedium)
             Text("Hard constraints for new exposure. Closing positions remains available when trading is paused.",style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted)
@@ -203,7 +203,7 @@ import java.util.UUID
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ExchangeSheet(c: ZenController,onDismiss: ()->Unit) {
     var stage by remember {mutableStateOf(0)};var exchange by remember {mutableStateOf("bitget")};var key by remember {mutableStateOf("")};var secret by remember {mutableStateOf("")};var passphrase by remember {mutableStateOf("")};var readOnly by remember {mutableStateOf(false)}
-    ModalBottomSheet(onDismissRequest=onDismiss,containerColor=ZenColors.Surface) {
+    ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
             Eyebrow("Connection setup · ${stage+1} of 2")
             Text(if(stage==0) "Choose your exchange" else "Secure API connection",style=MaterialTheme.typography.headlineMedium)
