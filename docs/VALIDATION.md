@@ -11,7 +11,7 @@ This is a tested backend paper-trading foundation and native Android implementat
 - Historical baseline (`historical-evaluation.json`): 719 completed Kraken BTC/USDT 5-minute candles, 128 trade-side changes, modeled net return −22.4096%, max drawdown 22.4096%, fees 10 bps and slippage 10 bps per side. Fixed chronological next-bar baseline; three subsequent out-of-sample folds retained in JSON. It stays research-only. Small historical sample and one market do not justify deployment.
 - Credential tests: AES-GCM encryption/decryption and wrong owner/exchange authenticated context rejection. No real private API key provided; private account permissions and sandbox order placement untested.
 - Order tests: PostgreSQL-style row lock design, duplicate idempotency response, fingerprint mismatch rejection, fee/P&L arithmetic, risk vetoes, stale/future data, invalid reduction, unknown/partial state tracker, bounded read retries.
-- Android: Compose source and build workflow provided; local `:app:assembleDebug :app:lintDebug` completed BUILD SUCCESSFUL with exit 0; debug APK generated (approximately 9.7 MiB). Offline Compose smoke test is present; emulator/device tests not yet executed.
+- Android: Compose source and build workflow provided; local `:app:assembleDebug :app:lintDebug` completed BUILD SUCCESSFUL with exit 0; debug APK generated (approximately 9.7 MiB). Offline Compose smoke test is present; GitHub emulator offline-sign-in smoke test passed: https://github.com/mzainch502-beep/zen/actions/runs/38201468540 . Full backend-backed navigation and real-device UX remain unverified.
 - Production: Railway project `zen-autonomous` created. Database service provisioning was rejected with `Free plan resource provision limit exceeded`. Template request queued but no service materialized. No functioning hosted backend is claimed.
 
 ## Unvalidated / absent
@@ -25,3 +25,7 @@ Live spot/futures orders, all futures account modes, leverage, contract sizing, 
 Dependency scan: no known vulnerabilities after selecting CCXT 4.4.100 with multidict 6.9.1. CCXT 4.5.85 pins vulnerable multidict 6.7.1; it is not used. Exchange support is narrower on the selected version; latest probe results are authoritative.
 
 Real-public-quote paper smoke test passed: simulated buy and close on a Bitget BTC/USDT quote, simulated final cash 199.9599991646, costs recorded, zero real exchange orders. See paper-smoke.json. GitHub secret scan: no leaks found; dependency audit: no known vulnerabilities.
+
+Runtime smoke: separate API and market worker processes ran successfully with real Bitget BTC/ETH/SOL quotes persisted to a temporary database; health reported worker_online=true. This was local testing, not cloud deployment. See runtime-smoke.json.
+
+APK build artifact: https://github.com/mzainch502-beep/zen/actions/runs/38201253264 . Android lint passed with two non-blocking warnings (application icon and data-extraction-rule declaration); no Android lint errors.

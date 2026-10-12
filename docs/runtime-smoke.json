@@ -1,0 +1,14 @@
+{
+  "health": {
+    "status": "ok",
+    "live_execution": false,
+    "worker_online": true
+  },
+  "symbols": [
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT"
+  ],
+  "cloud_deployed": false,
+  "test": "independent server and worker processes with real public data"
+}
