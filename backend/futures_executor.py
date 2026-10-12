@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy import select,text
 from database.models import Database,Connection,User,FuturesAccount,FuturesIntent,record
 from backend.security import Vault
+from backend.leadership import acquire
 from backend.futures_paper import config
 from backend.futures_domain import FuturesProposal,FuturesLimits,Contract,plan
 from backend.service import Rejected
@@ -121,7 +122,7 @@ async def reconcile(db,a,intent_id):
 async def run():
     db=Database();vault=Vault()
     with db.engine.connect() as leader:
-        if db.engine.dialect.name=='postgresql' and not leader.scalar(text('SELECT pg_try_advisory_lock(937414)')):raise RuntimeError('Executor leader already active')
+        await acquire(leader,937414)
         while True:
             with db.sessions() as s:
                 connections=[c for c in s.scalars(select(Connection)) if c.capabilities.get('product')=='futures' and not c.capabilities.get('revoked')]

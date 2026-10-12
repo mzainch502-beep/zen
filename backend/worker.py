@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import select, text
 from database.models import Database, User, Market, Strategy, Position, record
 from backend.domain import Quote, Proposal
+from backend.leadership import acquire
 from backend.service import execute, positions, portfolio, Rejected
 from exchange_adapters.ccxt_adapter import ReadAdapter, bounded_read
 from agents.autonomous import process_observation, manage_exits, VERSION
@@ -87,8 +88,7 @@ async def run_futures_observer(db):
 async def run():
     db=Database()
     with db.engine.connect() as leader:
-        if db.engine.dialect.name=='postgresql':
-            if not leader.scalar(text('SELECT pg_try_advisory_lock(937412)')): raise RuntimeError('Another worker owns leadership')
+        await acquire(leader,937412)
         adapter=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         futures_task=asyncio.create_task(run_futures_observer(db))
         observer=MarketObserver(db)
