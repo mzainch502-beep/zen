@@ -78,6 +78,8 @@ class Strategy(Base):
 class Database:
     def __init__(self,url=None):
         url=url or os.getenv('DATABASE_URL','sqlite:///zen-dev.db')
+        if url.startswith('postgres://'): url=url.replace('postgres://','postgresql+psycopg://',1)
+        elif url.startswith('postgresql://'): url=url.replace('postgresql://','postgresql+psycopg://',1)
         kw={'connect_args':{'check_same_thread':False}} if url.startswith('sqlite') else {'pool_pre_ping':True}
         self.engine=create_engine(url,**kw)
         self.sessions=sessionmaker(self.engine,expire_on_commit=False)
