@@ -37,6 +37,10 @@ def launch():
         os.setgid(10001)
         os.setuid(10001)
     print('Starting verified ZEN release '+commit,flush=True)
+    if os.environ.get('ZEN_PROCESS')=='cleanup':
+        from backend.maintenance import purge_deployment_fixture
+        print('Deployment fixture removed:',purge_deployment_fixture(os.environ['ZEN_QA_EMAIL']),flush=True)
+        return
     if os.environ.get('ZEN_PROCESS')=='worker':
         os.execv(sys.executable,[sys.executable,'-m','backend.worker'])
     else:

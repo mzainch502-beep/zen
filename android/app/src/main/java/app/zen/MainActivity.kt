@@ -133,7 +133,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             SectionLabel(if(setup) "Create your workspace" else "Welcome back")
             Text(if(setup) "Use your private setup code to create the owner account." else "Sign in to your secure ZEN workspace.",color=ZenColors.Muted,style=MaterialTheme.typography.bodyMedium)
             ZenField("Owner email",email,{email=it},placeholder="you@example.com")
-            OutlinedTextField(password,{password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp),visualTransformation=if(passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),trailingIcon={IconButton(onClick={passwordVisible=!passwordVisible}){Icon(if(passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,contentDescription=if(passwordVisible) "Hide password" else "Show password")}})
+            OutlinedTextField(password,{password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth().testTag("password-input"),shape=RoundedCornerShape(12.dp),visualTransformation=if(passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),trailingIcon={IconButton(onClick={passwordVisible=!passwordVisible}){Icon(if(passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,contentDescription=if(passwordVisible) "Hide password" else "Show password")}})
             if(setup) ZenField("Setup code",invite,{invite=it},secret=true)
             PrimaryAction(if(setup) "Create workspace" else "Sign in",enabled=!c.loading && email.isNotBlank() && password.isNotBlank() && (!setup || invite.isNotBlank())) {
                 if(setup) c.setup(email,password,invite,server) else c.login(email,password,server)
@@ -153,7 +153,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
 }
 @Composable fun ZenField(label: String,value: String,onChange: (String)->Unit,placeholder: String="",secret: Boolean=false) {
     OutlinedTextField(value,onChange,label={Text(label)},placeholder=if(placeholder.isEmpty()) null else ({Text(placeholder)}),singleLine=true,
-        visualTransformation=if(secret) PasswordVisualTransformation() else VisualTransformation.None,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(12.dp))
+        visualTransformation=if(secret) PasswordVisualTransformation() else VisualTransformation.None,modifier=Modifier.fillMaxWidth().testTag("field-"+label),shape=RoundedCornerShape(12.dp))
 }
 @Composable fun PageHeading(title: String,subtitle: String) {
     Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {Text(title,style=MaterialTheme.typography.headlineMedium);Text(subtitle,style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted)}

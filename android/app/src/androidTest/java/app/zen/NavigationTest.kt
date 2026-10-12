@@ -42,10 +42,10 @@ class NavigationTest {
     @Test fun signInInputsAndConnectionSettingsWork() {
         val fixture=FixtureRepository(false)
         compose.setContent {ZenApp(repository=fixture)}
-        compose.onNodeWithText("Welcome back").assertExists()
-        compose.onNodeWithText("Owner email").performTextInput("qa-owner@example.invalid")
-        compose.onNodeWithText("Password",useUnmergedTree=true).performTextInput("instrumentation-password")
-        compose.onNodeWithText("Sign in",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Welcome back").assertExists();capture("welcome")
+        compose.onNodeWithTag("field-Owner email").performScrollTo().performTextInput("qa-owner@example.invalid")
+        compose.onNodeWithTag("password-input").performScrollTo().performTextInput("instrumentation-password")
+        compose.onNode(hasText("Sign in") and hasClickAction()).performScrollTo().performClick()
         compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
         compose.onNodeWithText("Overview").assertExists()
         assert(fixture.calls.contains("POST /auth/login"))
