@@ -22,7 +22,7 @@ services:
     command: ["python", "-m", "backend.worker"]
     environment:
       DATABASE_URL: postgresql+psycopg://zen:${POSTGRES_PASSWORD}@postgres:5432/zen
-      MARKET_EXCHANGE: ${MARKET_EXCHANGE:-binance}
+      MARKET_EXCHANGE: ${MARKET_EXCHANGE:-bitget}
     depends_on: [api]
     restart: on-failure
 volumes:

@@ -1,5 +1,5 @@
 {
-  "collected_at": 1791776339.6308856,
+  "collected_at": 1791776845.5892057,
   "results": [
     {
       "exchange": "binance",
@@ -10,21 +10,13 @@
     {
       "exchange": "bybit",
       "status": "unavailable",
-      "error_type": "ExchangeError",
+      "error_type": "TypeError",
       "private_execution_validated": false
     },
     {
       "exchange": "okx",
-      "status": "public_quote_received",
-      "quote": {
-        "symbol": "BTC/USDT",
-        "bid": "83600.0",
-        "ask": "83600.1",
-        "last": "83600.1",
-        "timestamp": 1791776328.172,
-        "source": "okx",
-        "change_percent": "0.7093010228727896"
-      },
+      "status": "unavailable",
+      "error_type": "TypeError",
       "private_execution_validated": false
     },
     {
@@ -38,10 +30,10 @@
       "status": "public_quote_received",
       "quote": {
         "symbol": "BTC/USD",
-        "bid": "83490.01",
-        "ask": "83490.02",
-        "last": "83490.02",
-        "timestamp": 1791776322.137,
+        "bid": "83523.87",
+        "ask": "83523.88",
+        "last": "83523.87",
+        "timestamp": 1791776835.263,
         "source": "coinbase",
         "change_percent": null
       },
@@ -52,19 +44,19 @@
       "status": "public_quote_received",
       "quote": {
         "symbol": "BTC/USDT",
-        "bid": "83597.93",
-        "ask": "83597.94",
-        "last": "83597.94",
-        "timestamp": 1791776326.57,
+        "bid": "83629.64",
+        "ask": "83629.65",
+        "last": "83629.64",
+        "timestamp": 1791776839.674,
         "source": "bitget",
-        "change_percent": "0.703"
+        "change_percent": "0.817"
       },
       "private_execution_validated": false
     },
     {
       "exchange": "kucoin",
       "status": "unavailable",
-      "error_type": "ExchangeError",
+      "error_type": "TypeError",
       "private_execution_validated": false
     },
     {
@@ -76,7 +68,7 @@
     {
       "exchange": "mexc",
       "status": "unavailable",
-      "error_type": "ExchangeError",
+      "error_type": "TypeError",
       "private_execution_validated": false
     }
   ]

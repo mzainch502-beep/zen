@@ -9,7 +9,9 @@ class ReadAdapter:
     def __init__(self,exchange,credentials=None):
         if exchange not in EXCHANGES: raise ValueError('Unsupported exchange')
         self.name=exchange
-        self.client=getattr(ccxt,EXCHANGES[exchange])({'enableRateLimit':True,'aiohttp_trust_env':True,'timeout':10000,
+        adapter_id=EXCHANGES[exchange]
+        if exchange=='gate' and not hasattr(ccxt,'gate'): adapter_id='gateio'
+        self.client=getattr(ccxt,adapter_id)({'enableRateLimit':True,'aiohttp_trust_env':True,'timeout':10000,
             **({'cafile':os.environ['SSL_CERT_FILE']} if os.getenv('SSL_CERT_FILE') else {}),
             'options':{'defaultType':'spot','adjustForTimeDifference':True},**(credentials or {})})
     async def close(self): await self.client.close()

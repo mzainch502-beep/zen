@@ -41,7 +41,7 @@ async def run():
     with db.engine.connect() as leader:
         if db.engine.dialect.name=='postgresql':
             if not leader.scalar(text('SELECT pg_try_advisory_lock(937412)')): raise RuntimeError('Another worker owns leadership')
-        adapter=ReadAdapter(os.getenv('MARKET_EXCHANGE','binance'))
+        adapter=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         observer=MarketObserver(db)
         ws=asyncio.create_task(observer.stream_binance()) if adapter.name=='binance' else None
         try:

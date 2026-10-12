@@ -98,7 +98,7 @@ def create_app(database=None):
     async def candles(symbol: str='BTC/USDT',timeframe: str='1m',u=Depends(owner)):
         if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT'] or timeframe not in ['1m','3m','5m','15m','30m','1h','4h','1d']:
             raise HTTPException(422,'Unsupported market/timeframe')
-        a=ReadAdapter(os.getenv('MARKET_EXCHANGE','binance'))
+        a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         try: return {'symbol':symbol,'timeframe':timeframe,'candles':await a.candles(symbol,timeframe)}
         except Exception: raise HTTPException(503,'Exchange candles unavailable')
         finally: await a.close()

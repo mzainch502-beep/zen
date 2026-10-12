@@ -7,7 +7,7 @@ This is a tested backend paper-trading foundation and native Android implementat
 ## Results
 
 - Backend unit/API tests: latest exact result in `test-results.xml`; 40 passed, 1 skipped after setup/rate/minimum checks. PostgreSQL concurrency test is skipped locally because PostgreSQL is not provisioned; CI supplies PostgreSQL.
-- Actual public exchange probes (`exchange-public-tests.json`): OKX, Coinbase and Bitget returned real executable quotes. Binance, Bybit, Kraken, KuCoin, Gate and MEXC probes failed in this environment; they are not certified. Kraken historical candles were separately accessible even though ticker timestamp validation rejected its ticker. API construction tests for all nine adapters are not connectivity certification.
+- Actual public exchange probes (`exchange-public-tests.json`): Coinbase and Bitget returned real executable quotes on the security-compatible pinned CCXT version. OKX was accessible with the newer dependency-conflicted CCXT version but fails with the selected version. Binance, Bybit, OKX, Kraken, KuCoin, Gate and MEXC probes failed in this environment; they are not certified. Kraken historical candles were separately accessible even though ticker timestamp validation rejected its ticker. API construction tests for all nine adapters are not connectivity certification.
 - Historical baseline (`historical-evaluation.json`): 719 completed Kraken BTC/USDT 5-minute candles, 128 trade-side changes, modeled net return −22.4096%, max drawdown 22.4096%, fees 10 bps and slippage 10 bps per side. Fixed chronological next-bar baseline; three subsequent out-of-sample folds retained in JSON. It stays research-only. Small historical sample and one market do not justify deployment.
 - Credential tests: AES-GCM encryption/decryption and wrong owner/exchange authenticated context rejection. No real private API key provided; private account permissions and sandbox order placement untested.
 - Order tests: PostgreSQL-style row lock design, duplicate idempotency response, fingerprint mismatch rejection, fee/P&L arithmetic, risk vetoes, stale/future data, invalid reduction, unknown/partial state tracker, bounded read retries.
@@ -21,3 +21,5 @@ Live spot/futures orders, all futures account modes, leverage, contract sizing, 
 ## Reproduction
 
 `python -m pytest -q`; use CI for real PostgreSQL. `python -m research.run probe --output docs/exchange-public-tests.json`; `python -m research.run history --exchange kraken --output docs/historical-evaluation.json`. Exchange requests must be permitted by host network and exchange region. TLS verification stays enabled; corporate/proxy root CA is read only from explicit SSL_CERT_FILE.
+
+Dependency scan: no known vulnerabilities after selecting CCXT 4.4.100 with multidict 6.9.1. CCXT 4.5.85 pins vulnerable multidict 6.7.1; it is not used. Exchange support is narrower on the selected version; latest probe results are authoritative.
