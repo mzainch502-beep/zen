@@ -130,7 +130,9 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             Text("Your markets, decisions and risk —\nin one calm workspace.",style=MaterialTheme.typography.bodyLarge,color=ZenColors.Muted)
         }
         item {SurfaceCard {
-            SectionLabel(if(setup) "Create your workspace" else "Welcome back")
+            SectionLabel(if(setup) "Create workspace" else "Welcome back") {
+                TextButton(onClick={setup=!setup},contentPadding=PaddingValues(horizontal=8.dp)) {Text(if(setup) "Sign in" else "Create account")}
+            }
             Text(if(setup) "Use your private setup code to create the owner account." else "Sign in to your secure ZEN workspace.",color=ZenColors.Muted,style=MaterialTheme.typography.bodyMedium)
             ZenField("Owner email",email,{email=it},placeholder="you@example.com")
             OutlinedTextField(password,{password=it},label={Text("Password")},singleLine=true,modifier=Modifier.fillMaxWidth().testTag("password-input"),shape=RoundedCornerShape(12.dp),visualTransformation=if(passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),trailingIcon={IconButton(onClick={passwordVisible=!passwordVisible}){Icon(if(passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,contentDescription=if(passwordVisible) "Hide password" else "Show password")}})
@@ -138,7 +140,6 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             PrimaryAction(if(setup) "Create workspace" else "Sign in",enabled=!c.loading && email.isNotBlank() && password.isNotBlank() && (!setup || invite.isNotBlank())) {
                 if(setup) c.setup(email,password,invite,server) else c.login(email,password,server)
             }
-            TextButton(onClick={setup=!setup},modifier=Modifier.align(Alignment.CenterHorizontally)) {Text(if(setup) "Already have an account? Sign in" else "First time? Create workspace")}
         }}
         item {Row(horizontalArrangement=Arrangement.spacedBy(10.dp),verticalAlignment=Alignment.CenterVertically) {
             Icon(Icons.Rounded.Lock,contentDescription=null,tint=ZenColors.Muted,modifier=Modifier.size(18.dp))

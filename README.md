@@ -8,7 +8,7 @@ Native Android application with a persistent Railway backend, real public crypto
 
 1. Install the delivered ZEN Premium debug APK, or download the successful **Build Android APK** workflow artifact from GitHub Actions.
 2. Open ZEN. The production backend address is already configured.
-3. Select **First time? Create workspace**, enter your own email and a password of at least 12 characters, then paste your private setup code from the owner setup note delivered separately.
+3. Select **Create account on the Welcome back card**, enter your own email and a password of at least 12 characters, then paste your private setup code from the owner setup note delivered separately.
 4. Sign-in happens automatically after account creation. The code cannot create another owner once an account exists.
 5. Explore Markets, open a chart, and use **Create paper order** to exercise your own plan. The independent risk governor can reject a proposal.
 6. Positions → Manage position supports protective exits, partial reductions and full close. Agent pause/resume controls new paper exposure. Emergency stop is in the header.
