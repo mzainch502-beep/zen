@@ -199,7 +199,7 @@ fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObje
 }
 @Composable fun CandleChart(rows: JSONArray) {
     if(rows.length()==0) {Text("Select Chart to load real exchange candles.");return}
-    val data=(0 until rows.length()).takeLast(60).map {i->rows.getJSONArray(i)}
+    val data=(0 until rows.length()).toList().takeLast(60).map {i->rows.getJSONArray(i)}
     val low=data.minOf {it.getDouble(3)};val high=data.maxOf {it.getDouble(2)};val span=(high-low).coerceAtLeast(0.00001)
     Canvas(Modifier.fillMaxWidth().height(180.dp)) {
         val step=size.width/data.size
