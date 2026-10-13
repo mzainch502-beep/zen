@@ -77,9 +77,12 @@ object ZenColors {
     }
 }
 @Composable fun KeyValue(label: String,value: String,color: Color=ZenColors.Text) {
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-        Text(label,style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted,modifier=Modifier.weight(1f))
+    if(value.length>20 || label.length>24) Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        Text(label,style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         Text(value,style=MaterialTheme.typography.bodyMedium,color=color,fontFamily=ZenFonts.Mono)
+    } else Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
+        Text(label,style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted,modifier=Modifier.weight(1f))
+        Text(value,style=MaterialTheme.typography.bodyMedium,color=color,fontFamily=ZenFonts.Mono,modifier=Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.End)
     }
 }
 @Composable fun MiniMetric(label: String,value: String,color: Color=ZenColors.Text,modifier: Modifier=Modifier) {

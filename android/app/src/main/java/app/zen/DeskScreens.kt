@@ -70,19 +70,31 @@ import org.json.JSONObject
             KeyValue("Model",learning.value("version") ?: "contextual-paper-v2")
             Text("Recent net outcomes adjust strategy/regime preferences within bounded limits. Every change is audited. Improvement is measured, never assumed.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             val weights=learning.optJSONObject("weights")
-            if(weights!=null) weights.keys().asSequence().take(6).forEach {key->val w=weights.getJSONObject(key);KeyValue(key.replace('_',' '),"${w.optInt("samples")} trials · ${if(w.optBoolean("suspended")) "suspended" else number(w.value("weight"),3)}")}
+            val entries=weights?.keys()?.asSequence()?.toList()?.sorted().orEmpty()
+            val suspended=entries.count {weights!!.getJSONObject(it).optBoolean("suspended")}
+            if(suspended>0) Text("$suspended of ${entries.size} strategy/regime groups require review after losses. Automatic trading can stay ON while these groups withhold entries. There is no timed recovery or validated shadow recovery in this version.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning)
+            entries.forEach {key->val w=weights!!.getJSONObject(key)
+                Column(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text(key.substringBefore(':').replace('_',' ').replaceFirstChar {it.uppercase()}+" · "+key.substringAfter(':').replace('_',' '),style=MaterialTheme.typography.titleMedium)
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                        Text("${w.optInt("samples")} completed trials",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+                        Text(if(w.optBoolean("suspended")) "Review required" else "Bias "+number(w.value("weight"),3),style=MaterialTheme.typography.bodySmall,color=if(w.optBoolean("suspended")) ZenColors.Warning else ZenColors.Muted)
+                    }
+                }
+                HorizontalDivider(color=ZenColors.Border)
+            }
         }}
         val waits=r.optJSONArray("top_wait_reasons")?.rows().orEmpty()
         if(waits.isNotEmpty()) item {SurfaceCard {SectionLabel("Why entries were withheld");waits.take(3).forEach {w->Text("${w.optInt("count")} × ${w.value("reason")}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}}}
         item {SectionLabel("Opportunity tape")}
-        if(decisions.isEmpty()) item {EmptyState("First scan pending","Select a paper profile on Home. Decisions appear when fresh completed candles arrive.")}
+        if(decisions.isEmpty()) item {EmptyState("First scan pending","Select a paper profile in More → Strategies. Decisions appear when fresh completed candles arrive.")}
         items(decisions.take(12),key={it.value("decision_key") ?: it.toString()}) {d->SurfaceCard {
             SectionLabel(d.value("symbol")?.replace("_"," / ") ?: "Market"){StatusPill(d.value("action") ?: "WAIT",if(d.value("action")=="SHORT") ZenColors.Red else ZenColors.Emerald)}
             Text(d.value("reason") ?: "Evaluating context",style=MaterialTheme.typography.bodyMedium)
-            KeyValue("Execution",d.value("execution")?.replace('_',' ') ?: "Observation only")
+            KeyValue("Execution",if(d.value("action")=="WAIT" && d.value("execution")=="not_requested") "No order proposed" else d.value("execution")?.replace('_',' ') ?: "Observation only")
             d.value("execution_reason")?.let {Text(it,style=MaterialTheme.typography.bodySmall,color=ZenColors.Blue)}
             val ops=d.optJSONArray("opportunities")?.rows().orEmpty()
-            ops.forEach {o->KeyValue((o.value("strategy") ?: "Hypothesis").replace('_',' '),"${o.value("direction")} · ${number(o.value("score"),2)}")}
+            ops.forEach {o->KeyValue((o.value("strategy") ?: "Hypothesis").replace('_',' '),"${o.value("direction")} · ${number(o.value("score"),3)}")}
             Text("Scores rank research hypotheses; they are not win probabilities.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         }}
         item {SectionLabel("Audit trail")}

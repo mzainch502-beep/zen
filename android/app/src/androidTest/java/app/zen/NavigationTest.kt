@@ -10,13 +10,14 @@ import java.io.File
 import android.graphics.Bitmap
 
 /** Synthetic responses exist only in the instrumentation APK, never in the production app. */
-class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false) : ZenRepository {
+class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false,private val losses:Boolean=false) : ZenRepository {
     override var base="https://instrumentation.invalid"
     override var token=if(signedIn) "instrumentation-only-session" else ""
     val calls=java.util.Collections.synchronizedList(mutableListOf<String>())
     private var mode=if(live) "Paused" else "Paper"
     private var automatic=false
     private var profile="balanced"
+    private val learningWeights=if(losses) """{"momentum:trend":{"samples":5,"suspended":true},"pullback:expansion":{"samples":16,"suspended":true},"pullback:trend":{"samples":15,"suspended":true},"momentum:range":{"samples":7,"suspended":true},"range_reversion:range":{"samples":9,"suspended":true},"momentum:expansion":{"samples":6,"suspended":true},"range_reversion:expansion":{"samples":4,"weight":-0.2,"suspended":false},"pullback:range":{"samples":4,"weight":-0.1,"suspended":false}}""" else "{}"
     var profileBody: JSONObject? = null
     var futuresBody: JSONObject? = null
     override suspend fun call(path: String,method: String,body: JSONObject?): String {
@@ -30,7 +31,7 @@ class FixtureRepository(signedIn: Boolean=true,private val live: Boolean=false) 
             path=="/agent/mode" -> {mode=body!!.getString("mode");"""{"mode":"$mode"}"""}
             path=="/health" -> """{"status":"ok","worker_online":true,"live_execution":false}"""
             path=="/markets" -> """[{"stale":false,"quote":{"symbol":"BTC/USDT","last":"102425.25","bid":"102425.2","ask":"102425.3","change_percent":"0.4","source":"instrumentation-fixture"}},{"stale":false,"quote":{"symbol":"ETH/USDT","last":"3402.15","bid":"3402.1","ask":"3402.2","change_percent":"-0.7","source":"instrumentation-fixture"}}]"""
-            path=="/snapshot" -> """{"research":{"profile":"$profile","catalogue_count":200,"recent_evaluations":12,"learning":{"samples":0,"status":"collecting outcomes","version":"contextual-paper-v2"}},"automation":{"enabled":$automatic,"requested":$automatic,"can_enable":${!live},"product":"spot","blocked_reason":${if(live) "\"Live strategy validation pending\"" else "null"}},"account":{"email":"qa-owner@example.invalid"},"futures":{"activated":$live},"portfolio":{"paper":${!live},"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
+            path=="/snapshot" -> """{"research":{"profile":"$profile","catalogue_count":200,"recent_evaluations":12,"learning":{"weights":$learningWeights,"samples":${if(losses)66 else 0},"status":"collecting outcomes","version":"contextual-paper-v2"}},"automation":{"enabled":$automatic,"requested":$automatic,"can_enable":${!live},"product":"spot","blocked_reason":${if(live) "\"Live strategy validation pending\"" else "null"}},"account":{"email":"qa-owner@example.invalid"},"futures":{"activated":$live},"portfolio":{"paper":${!live},"mode":"$mode","equity":"200","cash":"200","daily_net":"0","net_pnl":"0","unrealized":"0","target":"25","exposure":"0","stale":false},"positions":[],"connections":[],"events":[],"agent":{"action":"WAIT","version":"research-v1","summary":"Observing market structure and execution conditions","reason":"Execution strategies remain gated by validation."},"limits":{"max_loss_trade":"2","max_daily_loss":"6","max_notional":"40","max_correlated_notional":"40","max_drawdown":"20","max_positions":2,"max_spread_bps":"20","max_slippage_bps":"10","max_order_rate":6,"cooldown_seconds":300,"max_leverage":"1","min_liquidation_buffer":"0.2"}}"""
             path.startsWith("/candles") -> """{"candles":[[1700000000000,100,102,99,101,1000],[1700000300000,101,103,100,102,1200]]}"""
             path.startsWith("/market-depth") -> """{"source":"instrumentation-fixture","bids":[[100,1]],"asks":[[101,1]]}"""
             path=="/audit/export" -> "[]"
@@ -159,6 +160,21 @@ class NavigationTest {
         compose.onNodeWithTag("theme-switch").performClick()
     }
 
+    @Test fun lossReviewRowsKeepAllGroupsReadable() {
+        val fixture=FixtureRepository(losses=true)
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithTag("nav-AI").performClick()
+        compose.onNodeWithTag("agent-scroll").performScrollToNode(hasText("Learning journal"))
+        compose.onNodeWithText("Momentum · expansion").performScrollTo()
+        compose.onAllNodesWithText("Review required").assertCountEquals(6)
+        compose.onNodeWithText("Momentum · trend").assertExists()
+        compose.onNodeWithText("Pullback · range").assertExists()
+        capture("learning-loss-review")
+        compose.onNodeWithText("Range reversion · range").performScrollTo()
+        compose.onNodeWithText("Range reversion · expansion").assertExists()
+        capture("learning-all-groups")
+    }
     @Test fun pausedLiveWorkspaceKeepsLiveLabel() {
         val fixture=FixtureRepository(live=true)
         compose.setContent {ZenApp(repository=fixture)}
