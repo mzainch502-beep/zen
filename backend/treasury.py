@@ -2,7 +2,7 @@
 import time
 from decimal import Decimal as D
 from sqlalchemy import select
-from database.models import User,Record,record
+from database.models import User,Record,Order,record
 from backend.futures_paper import account as futures_account,config
 from backend.service import portfolio as spot_account,serialize_positions,Rejected
 
@@ -33,6 +33,12 @@ def entry_guard(db,owner,new_notional):
     if cfg.workspace!='combined':return
     snap=combined(db,owner)['portfolio']
     limits=cfg.limits
+    # One shared entry budget across both books; reductions never call this gate.
+    since=time.time()-60
+    spot_orders=len(db.scalars(select(Order).where(Order.user_id==owner,Order.created>since)).all())
+    future_orders=len(db.scalars(select(Record).where(Record.user_id==owner,Record.kind=='futures_paper_fill',Record.created>since)).all())
+    rate=min(int(limits['max_order_rate']),int(db.get(User,owner).limits['max_order_rate']))
+    if spot_orders+future_orders>=rate:raise Rejected('Combined order rate limit')
     if snap['stale']:raise Rejected('Combined portfolio marks are stale')
     if D(snap['exposure'])+new_notional>D(str(limits['max_notional'])):raise Rejected('Combined exposure ceiling')
     if D(snap['daily_net'])+min(D(snap['unrealized']),D(0))<=-D(str(limits['max_daily_loss'])):raise Rejected('Combined daily loss circuit breaker')

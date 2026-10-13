@@ -94,3 +94,15 @@ def test_spot_completed_exposure_learns_once_after_partials(world):
   assert D(snapshot(s,u)['net'])==sum((D(r.payload['round_trip_net']) for r in realized),D(0))
   execute(s,u,Proposal(symbol='BTC/USDT',side='sell',quantity=D('.05'),reduce_only=True,idempotency_key='learning-spot-exit-002'));s.commit()
   assert snapshot(s,u)['samples']==1
+
+def test_shared_order_rate_combines_both_books(world):
+ from backend.service import Rejected
+ db,u,c,h=world
+ c.post('/portfolio/paper-capital',json=body(auto_risk=False),headers=h)
+ with db.sessions() as s:
+  cfg=config(s,u);cfg.limits={**cfg.limits,'max_order_rate':1}
+  s.add(Market(symbol='BTC/USDT',received=time.time(),payload={'symbol':'BTC/USDT','bid':'100','ask':'100.01','last':'100','timestamp':time.time(),'source':'synthetic-test'}));s.commit()
+  execute(s,u,Proposal(symbol='BTC/USDT',side='buy',quantity=D('.05'),stop=D('98'),idempotency_key='rate-shared-spot-001'));s.commit()
+  with pytest.raises(Rejected,match='Combined order rate'):execute_paper(s,u,proposal(margin='2',leverage=1))
+  execute(s,u,Proposal(symbol='BTC/USDT',side='sell',quantity=D('.05'),reduce_only=True,idempotency_key='rate-shared-close-001'));s.commit()
+  assert not s.scalar(select(Position).where(Position.user_id==u))
