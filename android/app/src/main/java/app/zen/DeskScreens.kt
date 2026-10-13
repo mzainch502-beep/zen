@@ -54,25 +54,26 @@ import org.json.JSONObject
 @Composable fun AgentScreen(c: ZenController,onConfirm: (Confirmation)->Unit) {
     val r=c.research;val learning=r.optJSONObject("learning") ?: JSONObject();val mode=c.portfolio.value("mode");val paused=mode!="Paper" && mode!="Live";val live=c.futures.optBoolean("activated")
     val decisions=(r.optJSONArray("candidates")?.rows() ?: c.events.rows().filter {it.value("kind")=="decision"}.map {it.getJSONObject("payload")})
-    LazyColumn(Modifier.fillMaxSize().testTag("agent-scroll"),contentPadding=PaddingValues(20.dp,14.dp,20.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {PageHeading("Intelligence","See what the agent considered—and what happened.")}
+    LazyColumn(Modifier.fillMaxSize().testTag("agent-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        item {PageHeading("Intelligence","Market assessment and decision evidence")}
         item {SurfaceCard {
             SectionLabel("Research desk"){StatusPill(if(paused) "PAUSED" else if(c.health.optBoolean("worker_online")) "SCANNING" else "OFFLINE")}
-            KeyValue("Profile",(r.value("profile") ?: "balanced").replaceFirstChar {it.uppercase()})
-            KeyValue("Discovered futures",r.value("catalogue_count") ?: "—")
-            KeyValue("Recent evaluations",r.value("recent_evaluations") ?: "—")
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){MiniMetric("Markets",r.value("catalogue_count") ?: "—",modifier=Modifier.weight(1f));MiniMetric("Evaluations",r.value("recent_evaluations") ?: "—",modifier=Modifier.weight(1f))}
+            Text("${(r.value("profile") ?: "balanced").replaceFirstChar {it.uppercase()}} research · ${if(live) "live permissions" else "paper workspace"}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             PrimaryAction(if(paused) "Resume workspace" else "Pause new positions",!c.loading){onConfirm(Confirmation(if(paused) "Resume workspace" else "Pause new positions","Protective exits continue. Resuming keeps your saved automation preference.",if(paused) "Resume" else "Pause"){if(paused && live) c.activateFutures(c.futures.getString("live_connection_id"),"I AUTHORIZE LIVE FUTURES") else c.mode(if(paused) "Paper" else "Paused")})}
         }}
         item {SectionLabel("Learning journal")}
         item {SurfaceCard {
-            Text(learning.value("status") ?: "Collecting outcomes",style=MaterialTheme.typography.titleLarge)
+            Text((learning.value("status") ?: "Collecting outcomes").replaceFirstChar {it.uppercase()},style=MaterialTheme.typography.titleMedium)
             KeyValue("Completed exposures",learning.value("samples") ?: "0")
-            KeyValue("Model",learning.value("version") ?: "contextual-paper-v2")
-            Text("Recent net outcomes adjust strategy/regime preferences within bounded limits. Every change is audited. Improvement is measured, never assumed.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+
             val weights=learning.optJSONObject("weights")
             val entries=weights?.keys()?.asSequence()?.toList()?.sorted().orEmpty()
             val suspended=entries.count {weights!!.getJSONObject(it).optBoolean("suspended")}
-            if(suspended>0) Text("$suspended of ${entries.size} strategy/regime groups require review after losses. Automatic trading can stay ON while these groups withhold entries. There is no timed recovery or validated shadow recovery in this version.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning)
+            if(suspended>0) Text("$suspended of ${entries.size} groups need review after losses. Their entries remain withheld.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning)
+            DetailDisclosure("Review learning evidence","${entries.size} strategy groups · model details","learning-details") {
+            KeyValue("Model",learning.value("version") ?: "contextual-paper-v2")
+            Text("Outcomes adjust bounded preferences. Improvement is measured, never assumed. No timed or validated shadow recovery is available.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             entries.forEach {key->val w=weights!!.getJSONObject(key)
                 Column(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     Text(key.substringBefore(':').replace('_',' ').replaceFirstChar {it.uppercase()}+" · "+key.substringAfter(':').replace('_',' '),style=MaterialTheme.typography.titleMedium)
@@ -82,6 +83,7 @@ import org.json.JSONObject
                     }
                 }
                 HorizontalDivider(color=ZenColors.Border)
+            }
             }
         }}
         val waits=r.optJSONArray("top_wait_reasons")?.rows().orEmpty()
@@ -93,9 +95,11 @@ import org.json.JSONObject
             Text(d.value("reason") ?: "Evaluating context",style=MaterialTheme.typography.bodyMedium)
             KeyValue("Execution",if(d.value("action")=="WAIT" && d.value("execution")=="not_requested") "No order proposed" else d.value("execution")?.replace('_',' ') ?: "Observation only")
             d.value("execution_reason")?.let {Text(it,style=MaterialTheme.typography.bodySmall,color=ZenColors.Blue)}
+            DetailDisclosure("Decision evidence","Hypotheses and execution details","decision-"+(d.value("decision_key") ?: d.value("symbol") ?: "market")) {
             val ops=d.optJSONArray("opportunities")?.rows().orEmpty()
             ops.forEach {o->KeyValue((o.value("strategy") ?: "Hypothesis").replace('_',' '),"${o.value("direction")} · ${number(o.value("score"),3)}")}
             Text("Scores rank research hypotheses; they are not win probabilities.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+            }
         }}
         item {SectionLabel("Audit trail")}
         items(c.events.rows().filter {it.value("kind")!="decision"}.take(8),key={it.getString("id")}) {ActivityRow(it)}

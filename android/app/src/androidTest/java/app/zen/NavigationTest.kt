@@ -167,6 +167,8 @@ class NavigationTest {
         compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
         compose.onNodeWithTag("nav-AI").performClick()
         compose.onNodeWithTag("agent-scroll").performScrollToNode(hasText("Learning journal"))
+        compose.onNodeWithTag("agent-scroll").performScrollToNode(hasTestTag("learning-details"))
+        compose.onNodeWithTag("learning-details").performClick()
         compose.onNodeWithText("Momentum · expansion").performScrollTo()
         compose.onAllNodesWithText("Review required").assertCountEquals(6)
         compose.onNodeWithText("Momentum · trend").assertExists()
@@ -175,6 +177,35 @@ class NavigationTest {
         compose.onNodeWithText("Range reversion · range").performScrollTo()
         compose.onNodeWithText("Range reversion · expansion").assertExists()
         capture("learning-all-groups")
+    }
+    @Test fun compactDetailsExpandAndCollapseWithoutMutatingTrading() {
+        val fixture=FixtureRepository(losses=true)
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithText("Automatic trading").performClick()
+        compose.onNodeWithText("Done").performClick()
+        compose.onNodeWithTag("nav-AI").performClick()
+        compose.onNodeWithTag("agent-scroll").performScrollToNode(hasTestTag("learning-details"))
+        capture("compact-learning")
+        compose.onNodeWithText("Momentum · trend").assertDoesNotExist()
+        compose.onNodeWithTag("learning-details").performClick()
+        compose.onNodeWithText("Momentum · trend").assertExists()
+        compose.onNodeWithTag("learning-details").performScrollTo().performClick()
+        compose.onNodeWithText("Momentum · trend").assertDoesNotExist()
+        org.junit.Assert.assertFalse(fixture.calls.any {it.startsWith("PUT ") || it.startsWith("POST ")})
+    }
+    @Test fun largerTextKeepsNavigationAndModeAccessible() {
+        val fixture=FixtureRepository()
+        compose.setContent {
+            val density=androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density,1.3f)) {ZenApp(repository=fixture)}
+        }
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithText("PAPER · SPOT").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Emergency stop").assertIsDisplayed()
+        compose.onNodeWithTag("nav-MORE").performClick()
+        compose.onNodeWithTag("nav-MORE").assertIsSelected()
+        capture("large-text-workspace")
     }
     @Test fun pausedLiveWorkspaceKeepsLiveLabel() {
         val fixture=FixtureRepository(live=true)

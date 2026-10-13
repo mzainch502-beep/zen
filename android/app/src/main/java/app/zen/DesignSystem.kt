@@ -1,6 +1,11 @@
 package app.zen
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,31 +52,31 @@ object ZenColors {
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red)
     MaterialTheme(colorScheme=scheme,
         typography=Typography(
-            displaySmall=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.SemiBold,fontSize=34.sp,lineHeight=42.sp,letterSpacing=(-1).sp),
+            displaySmall=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.SemiBold,fontSize=32.sp,lineHeight=38.sp,letterSpacing=(-1).sp),
             headlineMedium=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.SemiBold,fontSize=24.sp,lineHeight=30.sp,letterSpacing=(-.6).sp),
-            titleLarge=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.Medium,fontSize=22.sp,lineHeight=28.sp),
+            titleLarge=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.Medium,fontSize=20.sp,lineHeight=26.sp),
             titleMedium=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.Medium,fontSize=16.sp,lineHeight=22.sp),
             bodyLarge=TextStyle(fontFamily=ZenFonts.Sans,fontSize=15.sp,lineHeight=22.sp),
-            bodyMedium=TextStyle(fontFamily=ZenFonts.Sans,fontSize=14.sp,lineHeight=22.sp),
+            bodyMedium=TextStyle(fontFamily=ZenFonts.Sans,fontSize=14.sp,lineHeight=20.sp),
             bodySmall=TextStyle(fontFamily=ZenFonts.Sans,fontSize=12.sp,lineHeight=18.sp),
             labelLarge=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.Medium,fontSize=13.sp,lineHeight=18.sp),
             labelSmall=TextStyle(fontFamily=ZenFonts.Sans,fontWeight=FontWeight.Medium,fontSize=12.sp,lineHeight=16.sp,letterSpacing=.6.sp)
         ),content=content)
 }
 @Composable fun SurfaceCard(modifier: Modifier=Modifier,content: @Composable ColumnScope.()->Unit) {
-    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
-        Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
+    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp),color=ZenColors.Surface,border=BorderStroke(.7.dp,ZenColors.Border.copy(alpha=.7f))) {
+        Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp),content=content)
     }
 }
 @Composable fun SectionLabel(title: String,trailing: @Composable (() -> Unit)?=null) {
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-        Text(title,style=MaterialTheme.typography.titleMedium)
+        Text(title,style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
         trailing?.invoke()
     }
 }
 @Composable fun Eyebrow(text: String) {Text(text.uppercase(),style=MaterialTheme.typography.labelSmall,color=ZenColors.Muted)}
 @Composable fun StatusPill(text: String,color: Color=ZenColors.Blue) {
-    Row(Modifier.background(color.copy(alpha=.1f),RoundedCornerShape(50)).padding(horizontal=10.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.background(color.copy(alpha=.1f),RoundedCornerShape(50)).padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
         Box(Modifier.size(5.dp).background(color,RoundedCornerShape(50)))
         Text(text,style=MaterialTheme.typography.labelSmall,color=color)
     }
@@ -86,7 +91,7 @@ object ZenColors {
     }
 }
 @Composable fun MiniMetric(label: String,value: String,color: Color=ZenColors.Text,modifier: Modifier=Modifier) {
-    Column(modifier,verticalArrangement=Arrangement.spacedBy(7.dp)) {
+    Column(modifier,verticalArrangement=Arrangement.spacedBy(4.dp)) {
         Text(label,style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         Text(value,style=MaterialTheme.typography.titleMedium,fontFamily=ZenFonts.Mono,color=color)
     }
@@ -99,7 +104,7 @@ object ZenColors {
     }
 }
 @Composable fun PrimaryAction(label: String,enabled: Boolean=true,onClick: ()->Unit) {
-    Button(onClick=onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp),shape=RoundedCornerShape(18.dp)) {Text(label)}
+    Button(onClick=onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)) {Text(label)}
 }
 fun number(raw: String?,decimals: Int=2): String {
     val value=raw?.toBigDecimalOrNull() ?: return "—"
@@ -124,4 +129,16 @@ fun price(raw: String?): String {
     val v=raw?.toBigDecimalOrNull() ?: return "—"
     val d=if(v.abs()<BigDecimal("0.01")) 8 else if(v.abs()<BigDecimal.ONE) 5 else 2
     return "$"+number(raw,d)
+}
+
+/** Progressive disclosure keeps phone screens concise without concealing evidence. */
+@Composable fun DetailDisclosure(title:String,summary:String,tag:String,content:@Composable ColumnScope.()->Unit) {
+    var expanded by remember {mutableStateOf(false)}
+    Column {
+        Row(Modifier.fillMaxWidth().testTag(tag).semantics {stateDescription=if(expanded) "Expanded" else "Collapsed"}.clickable(role=Role.Button) {expanded=!expanded}.heightIn(min=48.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {Text(title,style=MaterialTheme.typography.labelLarge,color=ZenColors.Emerald);Text(summary,style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
+            Text(if(expanded) "−" else "+",style=MaterialTheme.typography.titleLarge,color=ZenColors.Emerald)
+        }
+        if(expanded) Column(Modifier.fillMaxWidth().padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(10.dp),content=content)
+    }
 }

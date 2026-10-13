@@ -25,23 +25,30 @@ import java.util.UUID
     IconButton(onClick=onClick,modifier=Modifier.size(44.dp)){Icon(painterResource(resource),label,tint=tint,modifier=Modifier.size(20.dp))}
 }
 @Composable fun ExecutiveHome(c:ZenController,onCapital:()->Unit,onMarkets:()->Unit,onPortfolio:()->Unit,onAI:()->Unit) {
-    val p=c.portfolio;val total=p.value("equity")
-    LazyColumn(Modifier.fillMaxSize().testTag("home-scroll"),contentPadding=PaddingValues(16.dp,16.dp,16.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){PageHeading("Overview","Personal investment workspace");DeskIconButton(R.drawable.ic_nav_settings,"Paper capital setup",onClick=onCapital)}}
+    val p=c.portfolio
+    LazyColumn(Modifier.fillMaxSize().testTag("home-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        item {Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){PageHeading("Overview","Your capital, at a glance")};DeskIconButton(R.drawable.ic_nav_settings,"Paper capital setup",onClick=onCapital)}}
         item {SurfaceCard {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Eyebrow("Net asset value");Text(if(p.optBoolean("paper",true)) "SIMULATED" else "LIVE",style=MaterialTheme.typography.labelSmall,color=ZenColors.Gold)}
-            Text(money(total),style=MaterialTheme.typography.displaySmall,fontFamily=ZenFonts.Mono)
-            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){Text(signedMoney(p.value("daily_net")),color=pnlColor(p.value("daily_net")),style=MaterialTheme.typography.titleMedium,fontFamily=ZenFonts.Mono);Text("daily net",color=ZenColors.Muted,style=MaterialTheme.typography.bodySmall)}
+            Text(money(p.value("equity")),style=MaterialTheme.typography.displaySmall,fontFamily=ZenFonts.Mono)
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){Text(signedMoney(p.value("daily_net")),color=pnlColor(p.value("daily_net")),style=MaterialTheme.typography.labelLarge,fontFamily=ZenFonts.Mono);Text("today · net",color=ZenColors.Muted,style=MaterialTheme.typography.bodySmall)}
             HorizontalDivider(color=ZenColors.Border)
-            Row(Modifier.fillMaxWidth()){MiniMetric("Available cash",money(p.value("cash")),modifier=Modifier.weight(1f));MiniMetric("Unrealized P&L",signedMoney(p.value("unrealized")),pnlColor(p.value("unrealized")),Modifier.weight(1f))}
-            if(p.optBoolean("stale")) Text("Valuation unavailable until marks are fresh",color=ZenColors.Warning,style=MaterialTheme.typography.bodySmall)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){MiniMetric("Available",money(p.value("cash")),modifier=Modifier.weight(1f));MiniMetric("Open P&L",signedMoney(p.value("unrealized")),pnlColor(p.value("unrealized")),Modifier.weight(1f))}
+            if(p.optBoolean("stale")) Text("Stale valuation · awaiting fresh marks",color=ZenColors.Warning,style=MaterialTheme.typography.bodySmall)
         }}
-        if(p.value("product")!="combined" && p.optBoolean("paper",true)) item {SurfaceCard {SectionLabel("Shared paper portfolio");Text("Initialize one capital amount across spot and futures. Existing positions must be closed first.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted);PrimaryAction("Initialize paper portfolio",!c.loading,onCapital)}}
+        item {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick=onPortfolio,modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)){Text("Positions · ${c.positions.length()}")}
+            Button(onClick=onMarkets,modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)){Text("Explore markets")}
+        }}
         item {PerformanceChart(c)}
-        item {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){OutlinedButton(onClick=onPortfolio,modifier=Modifier.weight(1f)){Text("Portfolio · ${c.positions.length()}")};OutlinedButton(onClick=onMarkets,modifier=Modifier.weight(1f)){Text("Trade")}}}
-        item {SurfaceCard {SectionLabel("Intelligence operations"){TextButton(onClick=onAI){Text("Inspect")}};KeyValue("Learning outcomes",c.research.optJSONObject("learning")?.value("samples") ?: "—");KeyValue("Market catalogue",c.research.value("catalogue_count") ?: "—");Text(c.research.optJSONObject("scan")?.let {"${it.optInt("evaluated")} evaluated · ${it.optInt("fills")} fills · ${it.optInt("risk_vetoes")} vetoes in the latest scan"} ?: "First scan pending",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}}
+        item {SurfaceCard {
+            SectionLabel("Intelligence"){TextButton(onClick=onAI){Text("Open")}}
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){MiniMetric("Markets",c.research.value("catalogue_count") ?: "—",modifier=Modifier.weight(1f));MiniMetric("Outcomes",c.research.optJSONObject("learning")?.value("samples") ?: "—",modifier=Modifier.weight(1f))}
+            Text(c.research.optJSONObject("scan")?.let {"Last scan · ${it.optInt("evaluated")} evaluated / ${it.optInt("fills")} fills / ${it.optInt("risk_vetoes")} vetoes"} ?: "Waiting for the first completed scan",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+        }}
+        if(p.value("product")!="combined" && p.optBoolean("paper",true)) item {SurfaceCard {DetailDisclosure("Shared paper portfolio","Configure spot and futures capital","paper-setup-details") {Text("One simulated balance across both books. Existing positions must be closed before resetting.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted);PrimaryAction("Initialize paper portfolio",!c.loading,onCapital)}}}
+        item {SectionLabel("Recent activity");Spacer(Modifier.height(8.dp));if(c.events.length()==0) Text("No account events yet",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted) else c.events.rows().take(3).forEach {ActivityRow(it);Spacer(Modifier.height(10.dp))}}
         item {Text("Income objective $80/day · aspirational, never a quota",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
-        item {SectionLabel("Activity");if(c.events.length()==0) Text("No account events yet",color=ZenColors.Muted) else c.events.rows().take(3).forEach {ActivityRow(it);Spacer(Modifier.height(12.dp))}}
     }
 }
 @Composable fun PerformanceChart(c:ZenController,expanded:Boolean=false) {
@@ -49,13 +56,13 @@ import java.util.UUID
     LaunchedEffect(period,c.connected){if(c.connected)c.history(period)}
     val points=c.historyData.optJSONArray("points")?.rows().orEmpty()
     SurfaceCard {
-        SectionLabel("Portfolio performance"){Row {DeskIconButton(R.drawable.ic_nav_performance,"Full-screen performance chart"){full=true};TextButton(onClick={c.history(period)}){Text("Refresh")}}}
+        SectionLabel("Performance"){Row {DeskIconButton(R.drawable.ic_nav_performance,"Full-screen performance chart"){full=true};DeskIconButton(R.drawable.ic_nav_refresh,"Refresh performance"){c.history(period)}}}
         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("1D","7D","30D","90D","1Y","ALL").forEach {p->FilterChip(period==p,{period=p;selected=null},label={Text(p)})}}
         if(c.historyLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        if(points.size<2) Text("Insufficient recorded snapshots. No performance curve is inferred.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+        if(points.size<2) Text("Your curve appears after two recorded valuations.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         else EquityPlot(points,if(expanded) 280 else 140,selected,{selected=it})
         selected?.let {i->points.getOrNull(i)?.let {p->Text("${java.text.SimpleDateFormat("MMM d, HH:mm",java.util.Locale.getDefault()).format(java.util.Date((p.optDouble("timestamp")*1000).toLong()))} · ${money(p.value("equity"))}",style=MaterialTheme.typography.bodySmall,fontFamily=ZenFonts.Mono)}}
-        Text("Recorded simulated NAV · funding settlement unavailable",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+        Text(if(c.portfolio.optBoolean("paper",true)) "Simulated NAV · funding not included" else "Recorded NAV · funding not included",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
     }
     if(full) androidx.compose.ui.window.Dialog(onDismissRequest={full=false},properties=androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth=false)){Surface(Modifier.fillMaxSize(),color=ZenColors.Background){Column(Modifier.statusBarsPadding().navigationBarsPadding().padding(16.dp)){TextButton(onClick={full=false}){Text("Close chart")};if(points.size<2) Text("Insufficient recorded snapshots") else EquityPlot(points,360,selected,{selected=it});Text(selected?.let {money(points.getOrNull(it)?.value("equity"))} ?: "Tap to inspect a recorded valuation")}}}
 }
@@ -74,9 +81,13 @@ import java.util.UUID
 }
 @Composable fun PortfolioDesk(c:ZenController,onPosition:(JSONObject)->Unit,onMarkets:()->Unit) {
     var filter by remember {mutableStateOf("All")};val rows=c.positions.rows().filter {filter=="All" || it.value("product")==filter.lowercase()}
-    LazyColumn(Modifier.fillMaxSize().testTag("portfolio-scroll"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {PageHeading("Portfolio","Valuation, allocation and open exposures")}
-        item {SurfaceCard {KeyValue("Net asset value",money(c.portfolio.value("equity")));KeyValue("Gross exposure",money(c.portfolio.value("gross_exposure") ?: c.portfolio.value("exposure")));KeyValue("Net exposure",money(c.portfolio.value("net_exposure")));KeyValue("Allocated margin",money(c.portfolio.value("allocated_margin")))}}
+    LazyColumn(Modifier.fillMaxSize().testTag("portfolio-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        item {PageHeading("Portfolio","Positions and capital allocation")}
+        item {SurfaceCard {
+            Eyebrow("Net asset value");Text(money(c.portfolio.value("equity")),style=MaterialTheme.typography.headlineMedium,fontFamily=ZenFonts.Mono)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){MiniMetric("Gross exposure",money(c.portfolio.value("gross_exposure") ?: c.portfolio.value("exposure")),modifier=Modifier.weight(1f));MiniMetric("Margin",money(c.portfolio.value("allocated_margin")),modifier=Modifier.weight(1f))}
+            DetailDisclosure("Exposure details","Net exposure and allocation","exposure-details"){KeyValue("Net exposure",money(c.portfolio.value("net_exposure")));KeyValue("Allocated margin",money(c.portfolio.value("allocated_margin")))}
+        }}
         item {Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","Spot","Futures").forEach {v->FilterChip(filter==v,{filter=v},label={Text(v)})}}}
         if(rows.isEmpty()) item {EmptyState("No open positions","Open positions from the selected book appear here.","Explore markets",onMarkets)}
         items(rows,key={it.getString("id")}) {p->SurfaceCard {
@@ -109,15 +120,15 @@ import java.util.UUID
 @Composable fun MoreDesk(c:ZenController,section:String,onSection:(String)->Unit,light:Boolean,onTheme:(Boolean)->Unit,onRisk:()->Unit,onExchange:()->Unit,onTrading:()->Unit,onCapital:()->Unit,onConfirm:(Confirmation)->Unit,share:(String)->Unit) {
     LaunchedEffect(section){when(section){"Risk Management"->c.loadRisk();"Market Context"->c.loadContext();"Security"->c.loadCapabilities()}}
     if(section=="Overview" || section=="More") {
-        LazyColumn(Modifier.fillMaxSize().testTag("more-scroll"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
-            item {PageHeading("Workspace","Operating controls and research tools")}
-            item {SurfaceCard {Text(c.snapshot.optJSONObject("account")?.value("email") ?: "Owner account",style=MaterialTheme.typography.titleMedium);Text("Session encrypted on device · credentials stay server-side",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}}
+        LazyColumn(Modifier.fillMaxSize().testTag("more-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+            item {PageHeading("Workspace","Research, controls and preferences")}
+            item {SurfaceCard {Text(c.snapshot.optJSONObject("account")?.value("email") ?: "Owner account",style=MaterialTheme.typography.titleMedium);Text("Owner workspace",style=MaterialTheme.typography.bodySmall,color=ZenColors.Gold)}}
             val destinations=listOf("Portfolio" to R.drawable.ic_nav_portfolio,"Markets" to R.drawable.ic_nav_trade,"Trading Desk" to R.drawable.ic_nav_trade,"AI Intelligence" to R.drawable.ic_nav_ai,"Strategies" to R.drawable.ic_nav_strategies,"Risk Management" to R.drawable.ic_nav_risk,"Performance Analytics" to R.drawable.ic_nav_performance,"Exchange Connections" to R.drawable.ic_nav_connections,"Activity & Reports" to R.drawable.ic_nav_reports,"Market Context" to R.drawable.ic_nav_notifications,"Settings" to R.drawable.ic_nav_settings)
-            items(destinations){(label,icon)->Surface(color=ZenColors.Surface,shape=RoundedCornerShape(12.dp)){Row(Modifier.fillMaxWidth().clickable{onSection(label)}.padding(16.dp).heightIn(min=44.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)){Icon(painterResource(icon),null,tint=ZenColors.Muted,modifier=Modifier.size(21.dp));Text(label,style=MaterialTheme.typography.titleMedium)}}}
+            items(destinations){(label,icon)->Surface(color=ZenColors.Surface,shape=RoundedCornerShape(12.dp)){Row(Modifier.fillMaxWidth().clickable{onSection(label)}.padding(horizontal=14.dp,vertical=6.dp).heightIn(min=44.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)){Icon(painterResource(icon),null,tint=ZenColors.Muted,modifier=Modifier.size(21.dp));Text(label,style=MaterialTheme.typography.bodyMedium,modifier=Modifier.weight(1f));Text("›",color=ZenColors.Muted,style=MaterialTheme.typography.titleLarge)}}}
             item {Text("ZEN © 2026 · Personal research platform",style=MaterialTheme.typography.bodySmall,color=ZenColors.Gold)}
         };return
     }
-    LazyColumn(Modifier.fillMaxSize().testTag("section-scroll"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize().testTag("section-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {TextButton(onClick={onSection("More")}){Text("← Workspace")};PageHeading(section,when(section){"Risk Management"->"Independent oversight and loss boundaries";"Performance Analytics"->"Recorded valuations and net outcomes";"Market Context"->"Public publisher metadata · research only";else->"Personal workspace"})}
         when(section) {
             "Risk Management"->{
