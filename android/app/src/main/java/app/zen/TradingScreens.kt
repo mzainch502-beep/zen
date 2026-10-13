@@ -35,6 +35,7 @@ import java.util.UUID
 @Composable fun MarketDetail(c: ZenController,symbol: String,onBack: ()->Unit,onConfirm: (Confirmation)->Unit) {
     val quote=c.markets.rows().find {it.getJSONObject("quote").getString("symbol")==symbol}?.getJSONObject("quote")
     val instrument=c.markets.rows().find {it.getJSONObject("quote").getString("symbol")==symbol}?.optJSONObject("instrument")
+    var fullChart by remember(symbol) {mutableStateOf(false)}
     var orderDialog by remember(symbol) {mutableStateOf(false)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=22.dp,vertical=12.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
@@ -51,7 +52,7 @@ import java.util.UUID
                 (if(symbol.contains("_")) listOf("1m","5m","15m","30m","1h","4h","1d") else listOf("1m","3m","5m","15m","30m","1h","4h","1d")).forEach {tf->FilterChip(c.chartTimeframe==tf,{c.chart(symbol,tf)},label={Text(tf.uppercase())})}
             }
             if(c.chartLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if(c.candles.length()>0) CandleChart(c.candles,symbol)
+            if(c.candles.length()>0) {CandleChart(c.candles,symbol);TextButton(onClick={fullChart=true}){Text("Full-screen market chart")}}
             else if(!c.chartLoading) Text(c.chartError ?: "No candles received.",style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted)
             c.chartError?.let {Text(it,style=MaterialTheme.typography.bodySmall,color=ZenColors.Red);TextButton(onClick={c.chart(symbol,c.chartTimeframe)}){Text("Retry market data")}}
         }
@@ -83,9 +84,10 @@ import java.util.UUID
         Text("New exposure follows your risk limits. The daily target never overrides risk approval.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         Spacer(Modifier.height(16.dp))
     }
+    if(fullChart) androidx.compose.ui.window.Dialog(onDismissRequest={fullChart=false},properties=androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth=false)){Surface(Modifier.fillMaxSize(),color=ZenColors.Background){Column(Modifier.statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp)){TextButton(onClick={fullChart=false}){Text("Close chart")};Text(symbol,style=MaterialTheme.typography.titleLarge);CandleChart(c.candles,symbol,360)}}}
     if(orderDialog && quote!=null) {if(symbol.contains("_")) FuturesOrderSheet(c,symbol,quote,onDismiss={orderDialog=false},onConfirm=onConfirm) else PaperOrderSheet(c,symbol,quote,onDismiss={orderDialog=false},onConfirm=onConfirm)}
 }
-@Composable fun CandleChart(rows: JSONArray,symbol: String) {
+@Composable fun CandleChart(rows: JSONArray,symbol: String,height:Int=220) {
     val data=(0 until rows.length()).toList().takeLast(60).map {rows.getJSONArray(it)}
     if(data.isEmpty()) return
     var selected by remember(rows) {mutableStateOf(data.lastIndex)}
@@ -97,7 +99,7 @@ import java.util.UUID
             Text(java.text.SimpleDateFormat("MM/dd HH:mm",java.util.Locale.getDefault()).format(java.util.Date(bar.getLong(0))),style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         }
         Row {
-            Canvas(Modifier.weight(1f).height(220.dp).semantics {contentDescription="$symbol candlestick chart, ${data.size} real candles; tap to inspect"}.pointerInput(rows) {detectTapGestures {point->selected=(point.x/size.width*data.size).toInt().coerceIn(data.indices)}}) {
+            Canvas(Modifier.weight(1f).height(height.dp).semantics {contentDescription="$symbol candlestick chart, ${data.size} real candles; tap to inspect"}.pointerInput(rows) {detectTapGestures {point->selected=(point.x/size.width*data.size).toInt().coerceIn(data.indices)}}) {
                 val step=size.width/data.size
                 fun y(price: Double)=((high-price)/span*size.height).toFloat()
                 repeat(4) {i->val level=size.height*i/3;drawLine(ZenColors.Border.copy(alpha=.5f),Offset(0f,level),Offset(size.width,level),.5f)}
@@ -109,7 +111,7 @@ import java.util.UUID
                 val x=(selected+.5f)*step
                 drawLine(ZenColors.Blue.copy(alpha=.7f),Offset(x,0f),Offset(x,size.height),.7f)
             }
-            Column(Modifier.height(220.dp).padding(start=9.dp),verticalArrangement=Arrangement.SpaceBetween) {
+            Column(Modifier.height(height.dp).padding(start=9.dp),verticalArrangement=Arrangement.SpaceBetween) {
                 listOf(high,low+(high-low)/2,low).forEach {Text(number(it.toString()),style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
             }
         }

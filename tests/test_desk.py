@@ -69,3 +69,28 @@ def test_capital_validation_and_emergency(world):
  assert c.post('/portfolio/paper-capital',json=body(amount='0'),headers=h).status_code==422
  with db.sessions() as s:s.get(User,u).mode='Emergency Stop';s.commit()
  assert c.post('/portfolio/paper-capital',json=body(),headers=h).status_code==409
+
+def test_combined_capital_cannot_reset_only_futures(world):
+ db,u,c,h=world
+ assert c.post('/portfolio/paper-capital',json=body(),headers=h).status_code==200
+ assert c.post('/futures/paper/seed',json={'equity':'500','confirmation':'RESET SIMULATED CAPITAL'},headers=h).status_code==409
+ assert D(c.get('/portfolio/overview',headers=h).json()['portfolio']['equity'])==200
+
+def test_spot_completed_exposure_learns_once_after_partials(world):
+ from database.models import record
+ from backend.learning import snapshot
+ db,u,c,h=world
+ c.post('/portfolio/paper-capital',json=body(auto_risk=False),headers=h)
+ with db.sessions() as s:
+  s.add(Market(symbol='BTC/USDT',received=time.time(),payload={'symbol':'BTC/USDT','bid':'100','ask':'100.01','last':'100','timestamp':time.time(),'source':'synthetic-test'}));s.commit()
+  execute(s,u,Proposal(symbol='BTC/USDT',side='buy',quantity=D('.1'),stop=D('98'),idempotency_key='learning-spot-entry-001'))
+  pos=s.scalar(select(Position).where(Position.user_id==u));pid=pos.id
+  record(s,u,'paper_spot_context',{'position_id':pid,'strategy':'momentum','regime':'trend','initial_risk':'.3'});s.commit()
+  execute(s,u,Proposal(symbol='BTC/USDT',side='sell',quantity=D('.05'),reduce_only=True,idempotency_key='learning-spot-exit-001'));s.commit()
+  assert snapshot(s,u)['samples']==0
+  execute(s,u,Proposal(symbol='BTC/USDT',side='sell',quantity=D('.05'),reduce_only=True,idempotency_key='learning-spot-exit-002'));s.commit()
+  assert snapshot(s,u)['samples']==1
+  realized=list(s.scalars(select(Record).where(Record.user_id==u,Record.kind=='spot_realized')))
+  assert D(snapshot(s,u)['net'])==sum((D(r.payload['round_trip_net']) for r in realized),D(0))
+  execute(s,u,Proposal(symbol='BTC/USDT',side='sell',quantity=D('.05'),reduce_only=True,idempotency_key='learning-spot-exit-002'));s.commit()
+  assert snapshot(s,u)['samples']==1
