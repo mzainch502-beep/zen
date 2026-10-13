@@ -77,7 +77,7 @@ object ZenColors {
     }
 }
 @Composable fun KeyValue(label: String,value: String,color: Color=ZenColors.Text) {
-    if(value.length>20 || label.length>24) Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+    if(value.length>18 || label.length>24) Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)) {
         Text(label,style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         Text(value,style=MaterialTheme.typography.bodyMedium,color=color,fontFamily=ZenFonts.Mono)
     } else Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
