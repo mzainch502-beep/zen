@@ -1,0 +1,138 @@
+{
+  "health": {
+    "status": "ok",
+    "live_execution": false,
+    "futures_executor_online": true,
+    "futures_public_markets": [
+      {
+        "symbol": "1000RATS_USDT",
+        "max_leverage": 125,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "AURORA_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "BTC_USDT",
+        "max_leverage": 500,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "DOGE_USDT",
+        "max_leverage": 300,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "4STOCK_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "AEON1_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "ALLO_USDT",
+        "max_leverage": 25,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "BP_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "GAS_USDT",
+        "max_leverage": 50,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "HEI_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "OTC_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "PAXG_USDT",
+        "max_leverage": 100,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "WET_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "WHUF_USDT",
+        "max_leverage": 20,
+        "api_allowed": false,
+        "fresh": true
+      },
+      {
+        "symbol": "ZC_USDT",
+        "max_leverage": 20,
+        "api_allowed": false,
+        "fresh": true
+      },
+      {
+        "symbol": "APM_USDT",
+        "max_leverage": 20,
+        "api_allowed": false,
+        "fresh": true
+      },
+      {
+        "symbol": "BONER_USDT",
+        "max_leverage": 20,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "EDU_USDT",
+        "max_leverage": 50,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "VVV_USDT",
+        "max_leverage": 50,
+        "api_allowed": true,
+        "fresh": true
+      },
+      {
+        "symbol": "AVAAI_USDT",
+        "max_leverage": 100,
+        "api_allowed": true,
+        "fresh": true
+      }
+    ],
+    "futures_catalogue_count": 673,
+    "autonomous_paper": true,
+    "worker_version": "paper-breakout-trial-v1",
+    "worker_online": true
+  },
+  "openapi": {
+    "version": "0.6.0",
+    "paths": 39
+  },
+  "observed_at": 1791916462.805459
+}

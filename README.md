@@ -1,55 +1,53 @@
-# ZEN — private trading research workspace
+# ZEN — institutional Android research desk
 
-Native Android application with a persistent Railway backend, real public crypto market data, a transactional paper trading ledger and independent risk controls.
+ZEN 0.6 is a native Android application with a persistent Railway backend, real public market feeds, separate spot/futures paper books, bounded contextual learning and an independent risk governor. The interface has been redesigned around a premium dark/light design system and an original adaptive ZEN icon.
 
-**Release 0.4 adds redesigned Android screens, experimental LONG/SHORT paper futures and an owner-activated native MEXC manual execution path. Private exchange order acceptance is unvalidated; autonomous live strategies remain gated.** $200 is simulated starting equity. The $25 daily objective is aspirational and never an order quota.
+[Download ZEN 0.6 APK](https://github.com/mzainch502-beep/zen/releases/download/zen-debug-38446791918/app-debug.apk) · [Verified release](docs/RELEASE-0.6-VERIFIED.md) · [Workflows and boundaries](docs/INSTITUTIONAL-0.6.md)
 
-## Install from your Android phone
+This is an experimental, owner-managed research platform. No profitable strategy or reliable daily income is established. Automatic live strategies remain gated. The latest historical replay lost after modeled costs and was not promoted.
 
-1. Install the delivered ZEN Premium debug APK, or download the successful **Build Android APK** workflow artifact from GitHub Actions.
-2. Open ZEN. The production backend address is already configured.
-3. Select **Create account on the Welcome back card**, enter your own email and a password of at least 12 characters, then paste your private setup code from the owner setup note delivered separately.
-4. Sign-in happens automatically after account creation. The code cannot create another owner once an account exists.
-5. Paper mode allows automatic experimental LONG proposals from the backend scanner; you can also create your own paper order in Markets. The independent risk governor can veto either. Use Agent → Pause to block new entries.
-6. Positions → Manage position supports protective exits, partial reductions and full close. Agent pause/resume controls new paper exposure. Emergency stop is in the header.
-7. Exchange connections are optional for paper mode. Use only read-only keys with trading, transfers and withdrawals disabled. Private account access depends on exchange APIs, permissions and region.
+## Install and operate entirely from Android
 
-Debug APKs are personal test builds. GitHub and local builds can have different debug signing keys; if Android rejects an update because the signatures differ, remove the previous test app before installing. Server-side account and history remain in PostgreSQL, but the local session is removed.
+1. Download the APK above and allow installation from your browser/file manager. You can also open GitHub → Actions → Build Android APK → Run workflow, then download/extract the successful APK artifact.
+2. Sign in to your existing owner account. The Railway backend address is preconfigured. For first-time setup only, choose Create account and use the private setup code previously delivered separately; this code cannot create a second owner. Never put it in GitHub.
+3. Home → paper capital setup initializes a single simulated capital amount, explicitly split between spot and futures. Close existing simulated positions first. Review the amount, leverage ceiling, automatic risk recommendation switch and automatic-entry permission, then confirm.
+4. Use the persistent **Automatic trading** ON/OFF switch for new entries. The agent can choose LONG, SHORT where derivatives permit it, or WAIT. It can remain in cash for an entire day. It never trades solely to reach an income target.
+5. Portfolio → Manage position opens protective exits, partial reductions and close controls. AI exposes real decisions and learning history. Emergency trading halt is in the header; it stops new entries while protective management continues. Existing exposure requires explicit close/reduction.
+6. More opens strategies, risk management, recorded performance, exchange connections, market context, audit export, appearance and account controls. Exchange keys are unnecessary for public data and paper trading. Direct stock-broker integration is deferred.
 
-## Deployed backend
+Debug builds can have different signing keys across GitHub runners. If Android rejects an update due to a signature mismatch, uninstall the earlier test app, install this APK and sign in again. Local sessions are removed; PostgreSQL account history remains. Owner-managed release signing is documented in [Android operations](docs/ANDROID.md). Never commit a keystore.
 
-HTTPS API: `https://zen-api-production-8459.up.railway.app`
+## Portfolio and research
 
-Railway has separate PostgreSQL, API and worker services in the selected Zain connection. The worker continues observing markets and monitoring paper exits when Android is closed. Application sleeping is disabled, subject to hosting account limits and outages. Hosting is metered; continuous execution is not guaranteed free.
+Tabs: **Home | Portfolio | Trade | AI | More**. Inter and IBM Plex Mono fonts are bundled with their licenses. The original monogram is a vector adaptive launcher icon. Light mode has an explicit contrast palette; it is not an inverted dark theme. Every displayed valuation, chart point, market quote and decision comes from its backend source. Instrumentation fixtures exist only in the test APK.
 
-The selected Railway account cannot access this repository directly. Deployment therefore uses the official public Python image with a **commit-pinned, SHA-256 verified source archive**. Hosting variables `SOURCE_COMMIT` and `SOURCE_SHA256` select the release. A mutable branch is never executed. Dependencies install at startup, so restart recovery can take longer than a prebuilt image; production container publishing is future deployment work. Database and credentials remain outside the container filesystem.
+The futures observer discovers the venue's supported USDT perpetual catalogue and scans rotating liquid/API-eligible candle batches. Spot alternatives use their own completed candles. Spot cannot open naked SHORT positions. Stock-linked/index-linked products are classified from venue metadata and labeled as derivatives, not shares; underlying sessions and corporate-action rules remain unverified. Discoverability does not certify product suitability, account permission or private order execution.
 
-API health: `/health`. OpenAPI: `/openapi.json`. Authenticated APIs are protected by owner sessions. No real exchange order was sent during verification.
+Shared paper capital is not duplicated between books. Both books obey their own governor plus aggregate exposure, entry-rate, position-count, daily-loss and drawdown limits. Automatic risk recommendations can tighten owner ceilings using paper evidence; they cannot expand live permissions or guarantee loss prevention. A 500× simulated ceiling is available for stress settings, but actual venue limits, costs, minimums and liquidation checks still apply. It does not force 500× positions or imply a safe $3 live account.
 
-## Premium Android experience
+Learning records completed exposure outcomes after costs, aggregating partial closes, and adjusts strategy/regime preferences only within bounded paper gates. Improvement after every trade, calibrated confidence and human professional discretion are not established. Limited public RSS metadata supplies research context; failures are visible and headlines cannot place orders.
 
-Five native Compose tabs: Home, Markets, Agent, Positions, Settings. Restrained near-black surfaces, emerald/blue accents, legible decimal values, meaningful status states and guided forms. Features include real candle charts, order-book snapshots, watchlist, readable research decisions, risk editing, position reductions, confirmation dialogs, audit export and account sign-out.
+## Persistent backend
 
-Bearer sessions are encrypted with an Android Keystore AES-GCM key. Passwords and exchange secrets are not saved on the phone. Saved exchange credentials are encrypted server-side and never returned to the client.
+API: `https://zen-api-production-8459.up.railway.app` · health `/health` · contracts `/openapi.json`.
 
-## Research and execution boundary
+Railway runs PostgreSQL, API, market/research worker and execution worker separately. Trading state and protective paper management persist when the phone closes or signs out; turn automation OFF first if you want to prevent new entries. Hosting is metered and subject to account limits/outages. It cannot be replaced by a reliable phone-only background process.
 
-The background worker now runs an autonomous experimental paper loop: observe → assess → propose → independent risk approval → simulated fill → TP/SL/time exits → fee-aware outcome audit. It scans BTC/ETH/SOL approximately every minute and monitors exits each worker pass. See [continuous paper release evidence](docs/AUTONOMOUS-PAPER.md). Spot LONG entries can execute automatically in Paper mode; separately selected paper futures supports LONG/SHORT experiments. See [0.4 implementation and certification boundaries](docs/RELEASE-0.4.md). The current research pipeline describes market structure and can conclude WAIT. No execution strategy has been promoted; descriptive signals and uncalibrated confidence are not treated as a trading edge. Automatic strategy training/promotion/rollback and full certified futures execution are unfinished. The tested historical baseline lost money after costs and was kept research-only.
+Deployment uses the official Python 3.12 image and a commit-pinned, SHA-256-verified source archive. `SOURCE_COMMIT` and `SOURCE_SHA256` select the release; a mutable branch is never executed. Dependencies install on startup, so recovery is slower than a prebuilt container. Secrets and database storage remain outside container source.
 
-Paper orders use fresh public bid/ask quotes, conservative modeled fees/slippage, account row locks and unique client IDs. Paper TP/SL runs on the worker; it is not an exchange-native protective order. Gaps or disconnections can exceed a planned loss. Private exchange keys and live sandbox orders have not been validated in this session.
+Owner sessions are protected by Android Keystore encryption, TLS, server-side credential encryption, session revocation and account authorization. Exchange secrets are never returned to the app. Withdrawals are unsupported. MFA and password recovery are explicitly unavailable. No private exchange order was sent during this release's verification.
 
-## Validation and development
+Native MEXC manual execution remains experimental behind explicit owner activation. Automatic live trading, universal private futures adapters, complete funding settlement, private protective-order certification, LLM provider configuration, iOS/web applications and public fund management remain unfinished. See the release report before using real funds.
 
-See [autonomous paper release evidence](docs/AUTONOMOUS-PAPER.md), [verified deployment](docs/AUTONOMOUS-DEPLOYMENT.json), and [earlier app end-to-end results](docs/DEPLOYMENT-E2E.json). Synthetic prices used for Android instrumentation exist only in the test APK; the production client has no demo balance or price feed.
+## Development
 
 ```sh
 pip install -r requirements.txt
 python -m pytest -q
-# PostgreSQL concurrency/migration checks are also run in GitHub CI.
 python -m backend.manage init-dev
 python -m backend.manage create-owner --email owner@example.com
 python -m uvicorn backend.api:app --host 0.0.0.0 --port 8080
 python -m backend.worker
 ```
 
-Use PostgreSQL for deployment. Local SQLite is for isolated tests/development. Docker Compose setup is in `infra/compose.yml`; Codespaces testing is documented in [CODESPACES.md](docs/CODESPACES.md). Keep `.env`, setup codes, API keys and signing keystores out of source control.
+PostgreSQL concurrency and migration tests run in GitHub CI. SQLite is only for isolated tests/development. See [Docker Compose](infra/compose.yml), [Codespaces](docs/CODESPACES.md), [Security](docs/SECURITY.md) and [architecture](docs/ARCHITECTURE.md). Keep API keys, setup codes and `.env` out of source control.
