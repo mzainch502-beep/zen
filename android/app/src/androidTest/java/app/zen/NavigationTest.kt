@@ -71,6 +71,7 @@ class NavigationTest {
         compose.waitUntil(10000) {fixture.calls.contains("GET /markets")}
         compose.onNodeWithText("Overview").assertExists();capture("home")
         compose.onNodeWithTag("nav-MARKETS").performClick()
+        compose.onNodeWithTag("nav-MARKETS").assertIsSelected()
         compose.onNodeWithText("Search markets").assertExists();capture("markets")
         compose.onNodeWithTag("nav-AGENT").performClick()
         compose.onNodeWithText("Intelligence").assertExists();capture("agent")

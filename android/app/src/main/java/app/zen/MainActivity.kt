@@ -22,6 +22,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -84,7 +88,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             if(c.authorized) Surface(color=ZenColors.Background,modifier=Modifier.navigationBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=8.dp)) {
                     ZenTab.entries.forEach {page->
-                        Column(Modifier.weight(1f).heightIn(min=56.dp).testTag("nav-"+page.name).clickable {tab=page;market=null},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+                        Column(Modifier.weight(1f).heightIn(min=56.dp).testTag("nav-"+page.name).semantics {selected=tab==page;role=Role.Tab}.clickable {tab=page;market=null},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                             Icon(when(page){ZenTab.HOME->Icons.Rounded.SpaceDashboard;ZenTab.MARKETS->Icons.Rounded.ShowChart;ZenTab.AGENT->Icons.Rounded.Psychology;ZenTab.POSITIONS->Icons.Rounded.Layers;ZenTab.SETTINGS->Icons.Rounded.Tune},null,tint=if(tab==page) ZenColors.Emerald else ZenColors.Muted,modifier=Modifier.size(22.dp))
                             Spacer(Modifier.height(5.dp))
                             Text(page.label,maxLines=1,softWrap=false,style=MaterialTheme.typography.labelSmall.copy(fontSize=10.sp,letterSpacing=0.sp),color=if(tab==page) ZenColors.Text else ZenColors.Muted)

@@ -1,0 +1,197 @@
+[
+  {
+    "symbol": "BTC_USDT",
+    "source": "MEXC public completed 1m candles",
+    "data_sha256": "e6ebf84ae74a699ca3ce357f429cc22096790bf10dacad868ec2e5e76725c0a3",
+    "adaptive": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 11,
+      "oos_trades": 5,
+      "realized_net": -0.39328759,
+      "oos_realized_net": -0.20010247,
+      "max_realized_drawdown": 0.39328759,
+      "decisions": 858,
+      "waits": 847,
+      "open_exposure_excluded": false,
+      "adaptive": true,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    },
+    "frozen_baseline": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 14,
+      "oos_trades": 7,
+      "realized_net": -0.47894161,
+      "oos_realized_net": -0.25473803,
+      "max_realized_drawdown": 0.47894161,
+      "decisions": 816,
+      "waits": 802,
+      "open_exposure_excluded": false,
+      "adaptive": false,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    }
+  },
+  {
+    "symbol": "SOL_USDT",
+    "source": "MEXC public completed 1m candles",
+    "data_sha256": "75fdfeea915fcd8cf723b55a85b5368038031373e25286874085cf93260a29c6",
+    "adaptive": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 17,
+      "oos_trades": 5,
+      "realized_net": -0.66410138,
+      "oos_realized_net": -0.27456378,
+      "max_realized_drawdown": 0.66410138,
+      "decisions": 783,
+      "waits": 766,
+      "open_exposure_excluded": false,
+      "adaptive": true,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    },
+    "frozen_baseline": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 36,
+      "oos_trades": 18,
+      "realized_net": -0.99790371,
+      "oos_realized_net": -0.52314754,
+      "max_realized_drawdown": 0.99790371,
+      "decisions": 620,
+      "waits": 583,
+      "open_exposure_excluded": true,
+      "adaptive": false,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    }
+  },
+  {
+    "symbol": "DOGE_USDT",
+    "source": "MEXC public completed 1m candles",
+    "data_sha256": "459f5ba75d44d83f470f72690fd3575f830a8a4be5a72e3c1d8c4be0d14eb0a1",
+    "adaptive": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 24,
+      "oos_trades": 4,
+      "realized_net": -0.64595295,
+      "oos_realized_net": -0.01319506,
+      "max_realized_drawdown": 0.68136271,
+      "decisions": 812,
+      "waits": 788,
+      "open_exposure_excluded": false,
+      "adaptive": true,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    },
+    "frozen_baseline": {
+      "version": "contextual-paper-v2",
+      "bars": 999,
+      "train_bars": 599,
+      "oos_bars": 400,
+      "completed_trades": 44,
+      "oos_trades": 18,
+      "realized_net": -1.2471695,
+      "oos_realized_net": -0.40340229,
+      "max_realized_drawdown": 1.28437054,
+      "decisions": 677,
+      "waits": 632,
+      "open_exposure_excluded": true,
+      "adaptive": false,
+      "promoted": false,
+      "assumptions": {
+        "round_trip_fee_bps": 16.0,
+        "one_way_slippage_bps": 5.0,
+        "modeled_spread_bps": 5.0,
+        "funding_settlement": "not modeled",
+        "stop_precedes_take_on_ambiguous_bar": true
+      },
+      "limitations": [
+        "Retrospective simulated fills",
+        "Short single-window split; not production validation",
+        "Funding settlement not modeled",
+        "Open unrealized exposure excluded from realized results",
+        "No guaranteed improvement"
+      ]
+    }
+  }
+]
