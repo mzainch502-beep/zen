@@ -130,7 +130,8 @@ class NavigationTest {
         compose.onNodeWithTag("nav-MORE").performClick()
         compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Strategies"))
         compose.onNodeWithText("Strategies").performClick()
-        compose.onNodeWithText("Aggressive").performScrollTo().performClick()
+        compose.onNodeWithTag("section-scroll").performScrollToNode(hasText("Aggressive"))
+        compose.onNodeWithText("Aggressive").performClick()
         compose.onNodeWithText("Start paper").performClick()
         compose.waitUntil(10000) {fixture.calls.contains("POST /agent/paper-profile")}
         org.junit.Assert.assertEquals("aggressive",fixture.profileBody?.getString("profile"))
