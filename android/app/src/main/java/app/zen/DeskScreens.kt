@@ -65,7 +65,7 @@ import org.json.JSONObject
         item {SectionLabel("Learning journal")}
         item {SurfaceCard {
             Text((learning.value("status") ?: "Collecting outcomes").replaceFirstChar {it.uppercase()},style=MaterialTheme.typography.titleMedium)
-            KeyValue("Completed exposures",learning.value("samples") ?: "0")
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("Completed exposures",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted,modifier=Modifier.weight(1f));Text(learning.value("samples") ?: "0",style=MaterialTheme.typography.titleMedium,fontFamily=ZenFonts.Mono)}
 
             val weights=learning.optJSONObject("weights")
             val entries=weights?.keys()?.asSequence()?.toList()?.sorted().orEmpty()

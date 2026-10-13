@@ -47,7 +47,7 @@ object ZenColors {
 }
 @Composable fun ZenTheme(light:Boolean=false,content: @Composable ()->Unit) {
     SideEffect {ZenColors.apply(light)}
-    val scheme=if(light) lightColorScheme(primary=Color(0xFF006D59),onPrimary=Color.White,background=Color(0xFFF4F7FB),surface=Color.White,surfaceVariant=Color(0xFFEDF2F8),onSurface=Color(0xFF142238),onSurfaceVariant=Color(0xFF4C6078),outline=Color(0xFFCAD5E2),error=Color(0xFFBA2237)) else darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,
+    val scheme=if(light) lightColorScheme(primary=Color(0xFF006D59),onPrimary=Color.White,secondary=Color(0xFF006D59),secondaryContainer=Color(0xFFDDF4EC),onSecondaryContainer=Color(0xFF005441),tertiary=Color(0xFF7A5B22),background=Color(0xFFF4F7FB),surface=Color.White,surfaceVariant=Color(0xFFEDF2F8),onSurface=Color(0xFF142238),onSurfaceVariant=Color(0xFF4C6078),outline=Color(0xFFCAD5E2),error=Color(0xFFBA2237)) else darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,secondary=ZenColors.Emerald,secondaryContainer=Color(0xFF163E38),onSecondaryContainer=Color(0xFFB7F4E5),tertiary=ZenColors.Gold,
         background=ZenColors.Background,surface=ZenColors.Surface,surfaceVariant=ZenColors.Raised,
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red)
     MaterialTheme(colorScheme=scheme,
