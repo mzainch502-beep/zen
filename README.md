@@ -1,8 +1,8 @@
 # ZEN — institutional Android research desk
 
-ZEN 0.6.1 is a native Android application with a persistent Railway backend, real public market feeds, separate spot/futures paper books, bounded contextual learning and an independent risk governor. The interface has been redesigned around a premium dark/light design system and an original adaptive ZEN icon.
+ZEN 0.7.0 is a native Android application with a persistent Railway backend, real public market feeds, separate spot/futures paper books, bounded contextual learning and an independent risk governor. The interface has been redesigned around a premium dark/light design system and an original adaptive ZEN icon.
 
-[Download ZEN 0.6.1 APK](https://github.com/mzainch502-beep/zen/releases/download/zen-debug-38473409677/app-debug.apk) · [Latest UI fix](docs/RELEASE-0.6.1.md) · [Backend verification](docs/RELEASE-0.6-VERIFIED.md) · [Workflows and boundaries](docs/INSTITUTIONAL-0.6.md)
+[Download ZEN 0.7.0 APK](https://github.com/mzainch502-beep/zen/releases/download/zen-debug-38477006878/app-debug.apk) · [Compact design release](docs/RELEASE-0.7.0.md) · [Backend verification](docs/RELEASE-0.6-VERIFIED.md) · [Workflows and boundaries](docs/INSTITUTIONAL-0.6.md)
 
 This is an experimental, owner-managed research platform. No profitable strategy or reliable daily income is established. Automatic live strategies remain gated. The latest historical replay lost after modeled costs and was not promoted.
 
