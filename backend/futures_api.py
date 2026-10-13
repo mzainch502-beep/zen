@@ -83,6 +83,7 @@ def install(app,db_dep,owner):
     @app.post('/futures/paper/seed')
     def seed(body:Seed,u=Depends(owner),db=Depends(db_dep)):
         db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
+        if config(db,u.id).workspace=='combined':raise HTTPException(409,'Use shared paper portfolio setup to reset combined capital')
         if u.mode=='Live' or body.confirmation!='RESET SIMULATED CAPITAL':raise HTTPException(409,'Explicit paper reset confirmation required')
         if db.scalar(select(FuturesPaperPosition).where(FuturesPaperPosition.user_id==u.id)):raise HTTPException(409,'Close paper futures positions before resetting')
         b=book(db,u.id);b.cash=body.equity;b.initial_equity=body.equity;b.high_water=body.equity

@@ -85,7 +85,8 @@ class NavigationTest {
         compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Settings"))
         compose.onNodeWithText("Settings").performClick()
         compose.onNodeWithText("Risk limits").performScrollTo().performClick()
-        compose.onNodeWithText("Loss per trade · USDT").assertExists();capture("risk")
+        compose.onNodeWithText("Shared paper").performClick()
+        compose.onNodeWithTag("field-Maximum trade loss · USDT").performScrollTo().assertExists();capture("risk")
     }
     @Test fun futuresControlsSendExplicitConfiguration() {
         val fixture=FixtureRepository()

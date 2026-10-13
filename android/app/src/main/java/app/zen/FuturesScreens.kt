@@ -1,6 +1,7 @@
 package app.zen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,9 +29,9 @@ import java.util.UUID
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
             Eyebrow("Trading controls")
             Text("Your trading environment",style=MaterialTheme.typography.headlineMedium)
-            Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){FilterChip(workspace=="spot",{workspace="spot"},label={Text("Spot")});FilterChip(workspace=="futures",{workspace="futures"},label={Text("Perpetual futures")})}
+            Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(10.dp)){FilterChip(workspace=="combined",{workspace="combined"},label={Text("Shared paper")});FilterChip(workspace=="spot",{workspace="spot"},label={Text("Spot")});FilterChip(workspace=="futures",{workspace="futures"},label={Text("Perpetual futures")})}
             Text("Paper futures supports LONG and SHORT using real MEXC contract prices. Live orders need your credentials and a separate authorization.",color=ZenColors.Muted,style=MaterialTheme.typography.bodyMedium)
-            if(workspace=="futures") {
+            if(workspace=="futures" || workspace=="combined") {
                 fields.forEach {(field,label)->ZenField(label,values[field].orEmpty(),{values[field]=it})}
                 Row(verticalAlignment=Alignment.CenterVertically){Switch(maximum,{maximum=it});Spacer(Modifier.width(12.dp));Text("Use discovered maximum, within my ceiling",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)}
                 Text("The ceiling is a permission, not a guarantee. Account tiers, fees, contract minimums and liquidation distance can still veto an order.",color=ZenColors.Muted,style=MaterialTheme.typography.bodySmall)
