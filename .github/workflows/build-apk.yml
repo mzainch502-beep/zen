@@ -35,5 +35,5 @@ jobs:
           gh release create "zen-debug-${GITHUB_RUN_ID}" \
             android/app/build/outputs/apk/debug/app-debug.apk \
             --target "$GITHUB_SHA" \
-            --title "ZEN 0.5.0 debug" \
+            --title "ZEN 0.6.0 debug" \
             --notes "Native Android testing build. Defaults to paper mode. Private MEXC order acceptance is unvalidated; autonomous live strategies remain gated."

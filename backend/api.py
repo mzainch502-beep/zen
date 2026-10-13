@@ -34,7 +34,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.5.0')
+    app=FastAPI(title='ZEN Paper API',version='0.6.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
@@ -106,7 +106,8 @@ def create_app(database=None):
         from backend.futures_live import live_snapshot
         from backend.futures_domain import FuturesLimits
         cfg=config(db,u.id)
-        future=live_snapshot(db,u.id) if cfg.live_connection_id and cfg.activated and cfg.workspace=='futures' else account(db,u.id) if cfg.workspace=='futures' else None
+        from backend.treasury import combined
+        future=combined(db,u.id) if cfg.workspace=='combined' and not cfg.activated else live_snapshot(db,u.id) if cfg.live_connection_id and cfg.activated and cfg.workspace=='futures' else account(db,u.id) if cfg.workspace=='futures' else None
         from backend.research_status import status as research_status
         from backend.automation import status as automation_status
         return {'research':research_status(db,u.id),'automation':automation_status(db,u),'account':{'email':u.email},
@@ -122,9 +123,9 @@ def create_app(database=None):
     @app.get('/markets')
     def markets(u=Depends(owner),db=Depends(db_dep)):
         from backend.futures_paper import config
-        if config(db,u.id).workspace=='futures':
+        if config(db,u.id).workspace in ['futures','combined']:
             from database.models import FuturesMarket
-            return [{'quote':{'symbol':m.symbol,'bid':m.ticker['bid1'],'ask':m.ticker['ask1'],'last':m.ticker['lastPrice'],'timestamp':int(m.ticker['timestamp'])/1000,'source':'mexc-futures','change_percent':str(Decimal(str(m.ticker.get('riseFallRate',0)))*100)},'stale':time.time()-m.received>15,'product':'futures','contract':{k:m.contract.get(k) for k in ['maxLeverage','minLeverage','contractSize','minVol','apiAllowed','state']},'ticker':{k:m.ticker.get(k) for k in ['fundingRate','holdVol','amount24','high24Price','lower24Price','fairPrice']}} for m in db.scalars(select(FuturesMarket).where(FuturesMarket.contract['state'].as_integer()==0).order_by(FuturesMarket.symbol))]
+            return [{'quote':{'symbol':m.symbol,'bid':m.ticker['bid1'],'ask':m.ticker['ask1'],'last':m.ticker['lastPrice'],'timestamp':int(m.ticker['timestamp'])/1000,'source':'mexc-futures','change_percent':str(Decimal(str(m.ticker.get('riseFallRate',0)))*100)},'stale':time.time()-m.received>15,'product':'futures','instrument':__import__('backend.instruments',fromlist=['classify']).classify(m.contract),'contract':{k:m.contract.get(k) for k in ['maxLeverage','minLeverage','contractSize','minVol','apiAllowed','state']},'ticker':{k:m.ticker.get(k) for k in ['fundingRate','holdVol','amount24','high24Price','lower24Price','fairPrice']}} for m in db.scalars(select(FuturesMarket).where(FuturesMarket.contract['state'].as_integer()==0).order_by(FuturesMarket.symbol))]
         return [{'quote':m.payload,'stale':time.time()-m.received>15} for m in db.scalars(select(Market))]
     @app.get('/candles')
     async def candles(symbol: str='BTC/USDT',timeframe: str='1m',u=Depends(owner),db=Depends(db_dep)):
@@ -182,7 +183,7 @@ def create_app(database=None):
         locked=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
         from database.models import FuturesConfig
         cfg=db.get(FuturesConfig,u.id)
-        if cfg and cfg.workspace=='futures':raise HTTPException(409,'Use Settings → Trading controls to edit futures limits. This editor applies to spot only.')
+        if cfg and cfg.workspace in ['futures','combined']:raise HTTPException(409,'Use Settings → Trading controls to edit futures limits. This editor applies to spot only.')
         body.automatic=Limits.model_validate(locked.limits).automatic
         locked.limits=body.model_dump(mode='json')
         record(db,u.id,'risk_limits',locked.limits); db.commit(); return locked.limits
@@ -255,6 +256,8 @@ def create_app(database=None):
                                         'portfolio':portfolio(db,u),'positions':serialize_positions(db,u)})
                 await asyncio.sleep(3)
         except (WebSocketDisconnect,asyncio.TimeoutError): pass
+    from backend.desk_api import install as install_desk
+    install_desk(app,db_dep,owner)
     from backend.futures_api import install
     install(app,db_dep,owner)
     return app

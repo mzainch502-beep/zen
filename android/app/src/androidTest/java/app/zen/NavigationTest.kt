@@ -57,7 +57,7 @@ class NavigationTest {
     @Test fun signInInputsAndConnectionSettingsWork() {
         val fixture=FixtureRepository(false)
         compose.setContent {ZenApp(repository=fixture)}
-        compose.onNodeWithText("Welcome back").assertExists();capture("welcome")
+        compose.onNodeWithText("The investment\noperating system.").assertExists();capture("welcome")
         compose.onNodeWithTag("field-Owner email").performScrollTo().performTextInput("qa-owner@example.invalid")
         compose.onNodeWithTag("password-input").performScrollTo().performTextInput("instrumentation-password")
         compose.onNode(hasText("Sign in") and hasClickAction()).performScrollTo().performClick()
@@ -70,18 +70,20 @@ class NavigationTest {
         compose.setContent {ZenApp(repository=fixture)}
         compose.waitUntil(10000) {fixture.calls.contains("GET /markets")}
         compose.onNodeWithText("Overview").assertExists();capture("home")
-        compose.onNodeWithTag("nav-MARKETS").performClick()
-        compose.onNodeWithTag("nav-MARKETS").assertIsSelected()
+        compose.onNodeWithTag("nav-TRADE").performClick()
+        compose.onNodeWithTag("nav-TRADE").assertIsSelected()
         compose.onNodeWithText("Search markets").assertExists();capture("markets")
-        compose.onNodeWithTag("nav-AGENT").performClick()
+        compose.onNodeWithTag("nav-AI").performClick()
         compose.onNodeWithText("Intelligence").assertExists();capture("agent")
         compose.onNodeWithText("Pause new positions").performScrollTo().performClick()
         compose.onNodeWithText("Pause",useUnmergedTree=true).performClick()
         compose.waitUntil(10000) {fixture.calls.contains("POST /agent/mode")}
-        compose.onNodeWithTag("nav-POSITIONS").performClick()
+        compose.onNodeWithTag("nav-PORTFOLIO").performClick()
         compose.onNodeWithText("No open positions").assertExists();capture("positions")
-        compose.onNodeWithTag("nav-SETTINGS").performClick()
+        compose.onNodeWithTag("nav-MORE").performClick()
         compose.onNodeWithText("Workspace").assertExists();capture("settings")
+        compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Settings"))
+        compose.onNodeWithText("Settings").performClick()
         compose.onNodeWithText("Risk limits").performScrollTo().performClick()
         compose.onNodeWithText("Loss per trade · USDT").assertExists();capture("risk")
     }
@@ -89,7 +91,9 @@ class NavigationTest {
         val fixture=FixtureRepository()
         compose.setContent {ZenApp(repository=fixture)}
         compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
-        compose.onNodeWithTag("nav-SETTINGS").performClick()
+        compose.onNodeWithTag("nav-MORE").performClick()
+        compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Settings"))
+        compose.onNodeWithText("Settings").performClick()
         compose.onNodeWithText("Trading controls").performScrollTo().performClick()
         compose.onNodeWithText("Perpetual futures").performClick()
         compose.onNodeWithTag("field-Leverage ceiling · ×").performScrollTo().performTextClearance()
@@ -118,16 +122,39 @@ class NavigationTest {
         val fixture=FixtureRepository()
         compose.setContent {ZenApp(repository=fixture)}
         compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithTag("nav-MORE").performClick()
+        compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Strategies"))
+        compose.onNodeWithText("Strategies").performClick()
         compose.onNodeWithText("Aggressive").performScrollTo().performClick()
         compose.onNodeWithText("Start paper").performClick()
         compose.waitUntil(10000) {fixture.calls.contains("POST /agent/paper-profile")}
         org.junit.Assert.assertEquals("aggressive",fixture.profileBody?.getString("profile"))
         compose.onNodeWithTag("automatic-trading-switch").assertIsOn()
-        compose.onNodeWithTag("nav-AGENT").performClick()
+        compose.onNodeWithTag("nav-AI").performClick()
         compose.onNodeWithTag("agent-scroll").performScrollToNode(hasText("Learning journal"))
         compose.onNodeWithText("Learning journal").assertIsDisplayed()
         capture("learning-desk")
     }
+    @Test fun themeAndStockFilterAreFunctional() {
+        val fixture=FixtureRepository()
+        compose.setContent {ZenApp(repository=fixture)}
+        compose.waitUntil(10000) {fixture.calls.contains("GET /snapshot")}
+        compose.onNodeWithTag("nav-TRADE").performClick()
+        compose.onNodeWithText("Stock-linked",useUnmergedTree=true).performClick()
+        capture("stock-filter-empty")
+        compose.onNodeWithTag("nav-MORE").performClick()
+        compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Settings"))
+        compose.onNodeWithText("Settings").performClick()
+        compose.onNodeWithTag("theme-switch").performClick()
+        capture("light-settings")
+        compose.onNodeWithTag("nav-HOME").performClick()
+        capture("light-home")
+        compose.onNodeWithTag("nav-MORE").performClick()
+        compose.onNodeWithTag("more-scroll").performScrollToNode(hasText("Settings"))
+        compose.onNodeWithText("Settings").performClick()
+        compose.onNodeWithTag("theme-switch").performClick()
+    }
+
     @Test fun pausedLiveWorkspaceKeepsLiveLabel() {
         val fixture=FixtureRepository(live=true)
         compose.setContent {ZenApp(repository=fixture)}

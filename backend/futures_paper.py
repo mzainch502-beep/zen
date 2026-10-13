@@ -35,11 +35,12 @@ def account(db,owner):
                      'notional':str(qty*mark) if mark else None,'leverage':str(d['leverage']),'margin_mode':'isolated',
                      'allocated_margin':d['margin'],'liquidation_price':d['liquidation_estimate'],'liquidation_label':'Modeled paper estimate',
                      'stop':d['stop'],'take_profit':d['take_profit'],'entry_fees':d['entry_fee'],'funding':'Not settled in this simulation',
-                     'product':'futures','paper':True,'stale':mark is None})
+                     'product':'futures','paper':True,'strategy':d.get('strategy','manual'),'regime':d.get('regime'),'stale':mark is None})
     fills=list(db.scalars(select(Record).where(Record.user_id==owner,Record.kind=='futures_paper_fill')))
-    reset=db.scalar(select(Record).where(Record.user_id==owner,Record.kind=='paper_capital_reset').order_by(Record.created.desc()).limit(1))
+    reset=db.scalar(select(Record).where(Record.user_id==owner,Record.kind.in_(['paper_capital_reset','portfolio_capital_reset'])).order_by(Record.created.desc()).limit(1))
     start=max(midnight(),reset.created if reset else 0)
     daily=sum((D(f.payload.get('realized_net',0))-D(f.payload.get('entry_fee',0)) for f in fills if f.created>=start),Decimal(0))
+    if reset:fills=[f for f in fills if f.created>=reset.created]
     fees=sum((D(f.payload.get('entry_fee',0))+D(f.payload.get('exit_fee',0)) for f in fills),Decimal(0))
     return {'portfolio':{'equity':None if stale else str(equity),'cash':str(b.cash),'unrealized':None if stale else str(unrealized),
                         'daily_net':str(daily),'net_pnl':None if stale else str(equity-b.initial_equity),'fees':str(fees),'funding':None,
@@ -64,8 +65,13 @@ def execute_paper(db,owner,p):
     if len(recent)>=limits.max_order_rate:raise Rejected('Futures order rate limit')
     contract=Contract.parse(m.contract)
     contract=contract.model_copy(update={'taker_fee':max(contract.taker_fee,Decimal('.0008'))})
+    if limits.auto_risk:
+        from risk.adaptive import recommend
+        limits=FuturesLimits.model_validate(recommend(db,owner,c.limits,D(snap['portfolio']['equity']),m.ticker)['effective_limits'])
     d=plan(p,contract,m.ticker,limits,b.cash,D(snap['portfolio']['equity']),D(snap['portfolio']['exposure']),
            len(snap['positions']),D(snap['portfolio']['daily_net']),b.high_water,time.time())
+    from backend.treasury import entry_guard
+    entry_guard(db,owner,d['notional'])
     b.cash-=d['margin']+d['entry_fee']
     position=FuturesPaperPosition(user_id=owner,symbol=p.symbol,data=json_safe(d));db.add(position);db.flush()
     payload={'schema_version':1,'client_id':p.idempotency_key,'fingerprint':fp,'position_id':position.id,'symbol':p.symbol,'direction':p.direction,

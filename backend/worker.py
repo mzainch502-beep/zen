@@ -127,11 +127,14 @@ async def run():
         await acquire(leader,937412)
         adapter=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         futures_task=asyncio.create_task(run_futures_observer(db))
+        from backend.context import run as run_context
+        context_task=asyncio.create_task(run_context(db))
         observer=MarketObserver(db)
         ws=asyncio.create_task(observer.stream_binance()) if adapter.name=='binance' else None
         try:
             cycle=0
             while True:
+                context_task=revive(context_task,lambda:run_context(db),db,'public_context')
                 futures_task=revive(futures_task,lambda:run_futures_observer(db),db,'futures_observer')
                 for symbol in SYMBOLS:
                     try: observer.store(await bounded_read(lambda:adapter.quote(symbol)))
@@ -149,6 +152,8 @@ async def run():
                         s.commit()
                     with db.sessions() as s:
                         manage_exits(s,u.id)
+                        from backend.treasury import capture
+                        if cycle%12==0:capture(s,u.id)
                         s.commit()
                     if cycle%12==0:
                         with db.sessions() as s:
@@ -161,7 +166,10 @@ async def run():
                                 # Refresh the execution quote after historical data retrieval.
                                 observer.store(await bounded_read(lambda:adapter.quote(symbol)))
                                 with db.sessions() as s:
-                                    process_observation(s,u.id,symbol,completed)
+                                    if cfg and cfg.workspace=='combined':
+                                        from agents.portfolio_pipeline import process_spot
+                                        process_spot(s,u.id,symbol,completed)
+                                    else:process_observation(s,u.id,symbol,completed)
                                     s.commit()
                             except Exception as e:
                                 with db.sessions() as s:
@@ -172,6 +180,6 @@ async def run():
         finally:
             if ws: ws.cancel()
             await adapter.close()
-            futures_task.cancel()
-            await asyncio.gather(futures_task,return_exceptions=True)
+            futures_task.cancel();context_task.cancel()
+            await asyncio.gather(futures_task,context_task,return_exceptions=True)
 if __name__=='__main__': asyncio.run(run())

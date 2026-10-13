@@ -16,6 +16,7 @@ class FuturesLimits(Strict):
     max_positions:int=Field(default=2,ge=1,le=10)
     max_order_rate:int=Field(default=6,ge=1,le=20)
     automatic:bool=False
+    auto_risk:bool=False
     profile:Literal["balanced","aggressive"]="balanced"
 
 class FuturesProposal(Strict):

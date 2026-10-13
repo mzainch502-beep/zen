@@ -45,12 +45,15 @@ class MainActivity : ComponentActivity() {
         setContent { ZenApp(share={text->startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,text)},"Export ZEN history"))}) }
     }
 }
-enum class ZenTab(val label: String) { HOME("Home"),MARKETS("Markets"),AGENT("Agent"),POSITIONS("Positions"),SETTINGS("Settings") }
+enum class ZenTab(val label: String) { HOME("Home"),PORTFOLIO("Portfolio"),TRADE("Trade"),AI("AI"),MORE("More") }
 data class Confirmation(val title: String,val detail: String,val action: String,val destructive: Boolean=false,val execute: ()->Unit)
 
 @Composable fun ZenApp(repository: ZenRepository?=null,share: (String)->Unit={}) {
-    ZenTheme {
-        val context=LocalContext.current
+    val context=LocalContext.current
+    val prefs=remember {context.getSharedPreferences("zen_preferences",android.content.Context.MODE_PRIVATE)}
+    var light by remember {mutableStateOf(prefs.getBoolean("light_theme",false))}
+    SideEffect {(context as? android.app.Activity)?.let {activity->androidx.core.view.WindowInsetsControllerCompat(activity.window,activity.window.decorView).apply {isAppearanceLightStatusBars=light;isAppearanceLightNavigationBars=light}}}
+    ZenTheme(light=light) {
         val repo=remember(repository) {repository ?: Api(context)}
         val scope=rememberCoroutineScope()
         val c=remember(repo) {ZenController(repo,scope)}
@@ -60,38 +63,39 @@ data class Confirmation(val title: String,val detail: String,val action: String,
         var riskDialog by remember {mutableStateOf(false)}
         var exchangeDialog by remember {mutableStateOf(false)}
         var market by remember {mutableStateOf<String?>(null)}
+        var section by remember {mutableStateOf("More")}
+        var capitalDialog by remember {mutableStateOf(false)}
         var tradingDialog by remember {mutableStateOf(false)}
         val lifecycle=LocalLifecycleOwner.current
         LaunchedEffect(c.authorized) {if(c.authorized) lifecycle.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {c.poll()}}
         val mode=c.portfolio.value("mode") ?: "Paper"
         val worker=c.health.optBoolean("worker_online")
         Scaffold(containerColor=ZenColors.Background,topBar={
-            if(c.authorized) Column(Modifier.statusBarsPadding().padding(horizontal=22.dp,vertical=6.dp)) {
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                        ZenMark(Modifier.size(28.dp))
-                        Text("ZEN",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
-                    }
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        StatusPill(if(!c.portfolio.optBoolean("paper",true)) when(mode) {"Paused"->"LIVE · PAUSED";"Emergency Stop"->"LIVE · STOPPED";else->"LIVE"} else if(mode=="Emergency Stop") "STOPPED" else "PAPER",if(!c.portfolio.optBoolean("paper",true) || mode=="Emergency Stop") ZenColors.Red else ZenColors.Blue)
-                        IconButton(onClick={confirm=Confirmation("Emergency stop","Prevent all new positions. Existing positions stay open, and their protective exits remain active.","Stop new positions",true){c.mode("Emergency Stop")}},enabled=!c.loading) {
-                            Icon(Icons.Rounded.PowerSettingsNew,contentDescription="Emergency stop",tint=ZenColors.Muted)
+            if(c.authorized) Surface(color=ZenColors.Header) {
+                Column(Modifier.statusBarsPadding().padding(horizontal=16.dp,vertical=4.dp)) {
+                    Row(Modifier.fillMaxWidth().height(48.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)){ZenMark(Modifier.size(30.dp));Text("ZEN",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold,letterSpacing=2.sp)}
+                        Row {
+                            DeskIconButton(R.drawable.ic_nav_notifications,"Notifications"){section="Alerts";tab=ZenTab.MORE}
+                            DeskIconButton(R.drawable.ic_nav_account,"Account"){section="Account";tab=ZenTab.MORE}
+                            DeskIconButton(R.drawable.ic_nav_menu,"Open menu"){section="More";tab=ZenTab.MORE}
+                            DeskIconButton(R.drawable.ic_nav_power,"Emergency stop",tint=ZenColors.Red){confirm=Confirmation("Emergency trading halt","Prevent new entries. Existing protective exits and close-only actions remain active.","Halt entries",true){c.mode("Emergency Stop")}}
                         }
                     }
-                }
-                Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-                    Box(Modifier.size(5.dp).background(if(c.connected && worker) ZenColors.Emerald else ZenColors.Muted,RoundedCornerShape(50)))
-                    Text(if(c.connected) if(worker) "Backend and observer connected" else "Backend connected · observer offline" else "Connecting to your workspace",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                        Text(if(c.connected && worker) "● Market data connected" else if(c.connected) "Observer offline" else "Disconnected",style=MaterialTheme.typography.bodySmall,color=if(c.connected && worker) ZenColors.Emerald else ZenColors.Warning)
+                        Text(if(!c.portfolio.optBoolean("paper",true)) if(mode=="Paused") "LIVE · PAUSED" else if(mode=="Emergency Stop") "LIVE · STOPPED" else "LIVE" else "PAPER · "+(c.portfolio.value("product") ?: "spot").uppercase(),style=MaterialTheme.typography.labelSmall,color=if(!c.portfolio.optBoolean("paper",true)) ZenColors.Red else ZenColors.Gold)
+                    }
                 }
             }
         },bottomBar={
             if(c.authorized) Surface(color=ZenColors.Background,modifier=Modifier.navigationBarsPadding()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=8.dp)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal=4.dp,vertical=6.dp)) {
                     ZenTab.entries.forEach {page->
-                        Column(Modifier.weight(1f).heightIn(min=56.dp).testTag("nav-"+page.name).semantics {selected=tab==page;role=Role.Tab}.clickable {tab=page;market=null},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-                            Icon(when(page){ZenTab.HOME->Icons.Rounded.SpaceDashboard;ZenTab.MARKETS->Icons.Rounded.ShowChart;ZenTab.AGENT->Icons.Rounded.Psychology;ZenTab.POSITIONS->Icons.Rounded.Layers;ZenTab.SETTINGS->Icons.Rounded.Tune},null,tint=if(tab==page) ZenColors.Emerald else ZenColors.Muted,modifier=Modifier.size(22.dp))
+                        Column(Modifier.weight(1f).heightIn(min=56.dp).background(if(tab==page) ZenColors.Emerald.copy(alpha=.08f) else Color.Transparent,RoundedCornerShape(12.dp)).testTag("nav-"+page.name).semantics {selected=tab==page;role=Role.Tab}.clickable {tab=page;market=null;if(page==ZenTab.MORE)section="More"},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+                            Icon(androidx.compose.ui.res.painterResource(when(page){ZenTab.HOME->R.drawable.ic_nav_home;ZenTab.PORTFOLIO->R.drawable.ic_nav_portfolio;ZenTab.TRADE->R.drawable.ic_nav_trade;ZenTab.AI->R.drawable.ic_nav_ai;ZenTab.MORE->R.drawable.ic_nav_more}),null,tint=if(tab==page) ZenColors.Emerald else ZenColors.Muted,modifier=Modifier.size(22.dp))
                             Spacer(Modifier.height(5.dp))
-                            Text(page.label,maxLines=1,softWrap=false,style=MaterialTheme.typography.labelSmall.copy(fontSize=10.sp,letterSpacing=0.sp),color=if(tab==page) ZenColors.Text else ZenColors.Muted)
+                            Text(page.label,maxLines=1,softWrap=false,style=MaterialTheme.typography.labelSmall.copy(fontSize=12.sp,letterSpacing=0.sp),color=if(tab==page) ZenColors.Text else ZenColors.Muted)
                         }
                     }
                 }
@@ -105,11 +109,12 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                 if(!c.authorized) WelcomeScreen(c)
                 else if(market!=null) MarketDetail(c,market!!,onBack={market=null},onConfirm={confirm=it})
                 else when(tab) {
-                    ZenTab.HOME->HomeScreen(c,onMarkets={tab=ZenTab.MARKETS},onPositions={tab=ZenTab.POSITIONS},onAgent={tab=ZenTab.AGENT},onRisk={if(c.portfolio.value("product")=="futures") tradingDialog=true else riskDialog=true},onConfirm={confirm=it})
-                    ZenTab.MARKETS->MarketsScreen(c,onMarket={symbol->market=symbol;c.chart(symbol,"5m")})
-                    ZenTab.AGENT->AgentScreen(c,onConfirm={confirm=it})
-                    ZenTab.POSITIONS->PositionsScreen(c,onPosition={position=it},onMarkets={tab=ZenTab.MARKETS})
-                    ZenTab.SETTINGS->SettingsScreen(c,onRisk={if(c.portfolio.value("product")=="futures") tradingDialog=true else riskDialog=true},onExchange={exchangeDialog=true},onConfirm={confirm=it},share=share,onTrading={tradingDialog=true})
+                    ZenTab.HOME->ExecutiveHome(c,onCapital={capitalDialog=true},onMarkets={tab=ZenTab.TRADE},onPortfolio={tab=ZenTab.PORTFOLIO},onAI={tab=ZenTab.AI})
+                    ZenTab.TRADE->MarketsScreen(c,onMarket={symbol->market=symbol;c.chart(symbol,"5m")})
+                    ZenTab.AI->AgentScreen(c,onConfirm={confirm=it})
+                    ZenTab.PORTFOLIO->PortfolioDesk(c,onPosition={position=it},onMarkets={tab=ZenTab.TRADE})
+                    ZenTab.MORE->MoreDesk(c,section,onSection={when(it){"Portfolio"->tab=ZenTab.PORTFOLIO;"Markets","Trading Desk"->tab=ZenTab.TRADE;"AI Intelligence"->tab=ZenTab.AI;else->section=it}},light=light,onTheme={light=it;prefs.edit().putBoolean("light_theme",it).apply()},onRisk={tradingDialog=true},onExchange={exchangeDialog=true},onTrading={tradingDialog=true},onCapital={capitalDialog=true},onConfirm={confirm=it},share=share)
+
                 }
             }
         }
@@ -118,6 +123,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             confirmButton={TextButton(onClick={confirm=null;dialog.execute()},colors=ButtonDefaults.textButtonColors(contentColor=if(dialog.destructive) ZenColors.Red else ZenColors.Emerald)){Text(dialog.action)}},
             dismissButton={TextButton(onClick={confirm=null}){Text("Cancel")}}) }
         position?.let {p->PositionSheet(c,p,onDismiss={position=null},onConfirm={confirm=it})}
+        if(capitalDialog) CapitalSheet(c,onDismiss={capitalDialog=false},onConfirm={confirm=it})
         if(riskDialog) RiskSheet(c,onDismiss={riskDialog=false})
         if(exchangeDialog) ExchangeSheet(c,onDismiss={exchangeDialog=false})
         if(tradingDialog) FuturesSettingsSheet(c,onDismiss={tradingDialog=false},onConfirm={confirm=it})
@@ -140,7 +146,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=24.dp,vertical=16.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
         item {
             Spacer(Modifier.height(4.dp));Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)){ZenMark(Modifier.size(44.dp));Column {Text("ZEN",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.SemiBold);Eyebrow("Trading intelligence")}};Spacer(Modifier.height(20.dp))
-            Text("Markets in\nperspective.",style=MaterialTheme.typography.displaySmall.copy(fontSize=36.sp,lineHeight=40.sp,fontWeight=FontWeight.SemiBold))
+            Text("The investment\noperating system.",style=MaterialTheme.typography.displaySmall.copy(fontSize=30.sp,lineHeight=36.sp,fontWeight=FontWeight.SemiBold))
             Spacer(Modifier.height(12.dp))
             Text("Markets. Decisions. Capital.",style=MaterialTheme.typography.bodyLarge,color=ZenColors.Muted)
         }
@@ -178,12 +184,14 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     var search by remember {mutableStateOf("")};var favoritesOnly by remember {mutableStateOf(false)}
     val context=LocalContext.current;val prefs=remember {context.getSharedPreferences("zen_preferences",android.content.Context.MODE_PRIVATE)}
     var favorites by remember {mutableStateOf(prefs.getStringSet("favorites",emptySet()).orEmpty().toSet())}
+    var category by remember {mutableStateOf("All")}
     var sort by remember {mutableStateOf("Liquidity")}
-    val rows=c.markets.rows().filter {m-> val symbol=m.getJSONObject("quote").getString("symbol");symbol.contains(search,true) && (!favoritesOnly || symbol in favorites)}.sortedByDescending {m->if(sort=="Gainers") m.getJSONObject("quote").value("change_percent")?.toDoubleOrNull() ?: 0.0 else m.optJSONObject("ticker")?.value("amount24")?.toDoubleOrNull() ?: 0.0}
+    val rows=c.markets.rows().filter {m-> val symbol=m.getJSONObject("quote").getString("symbol");symbol.contains(search,true) && (!favoritesOnly || symbol in favorites) && (category=="All" || (category=="Stock-linked" && m.optJSONObject("instrument")?.value("kind") in listOf("stock_linked_perpetual","index_linked_perpetual")) || (category=="Crypto" && m.optJSONObject("instrument")?.value("kind") !in listOf("stock_linked_perpetual","index_linked_perpetual")))}.sortedByDescending {m->if(sort=="Gainers") m.getJSONObject("quote").value("change_percent")?.toDoubleOrNull() ?: 0.0 else m.optJSONObject("ticker")?.value("amount24")?.toDoubleOrNull() ?: 0.0}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(22.dp,16.dp,22.dp,24.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         item {PageHeading("Markets","${c.markets.length()} instruments · live exchange catalogue")}
         item {OutlinedTextField(search,{search=it},placeholder={Text("Search markets")},leadingIcon={Icon(Icons.Rounded.Search,null)},singleLine=true,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp))}
         item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {FilterChip(!favoritesOnly && sort=="Liquidity",{favoritesOnly=false;sort="Liquidity"},label={Text("Liquidity")});FilterChip(!favoritesOnly && sort=="Gainers",{favoritesOnly=false;sort="Gainers"},label={Text("Gainers")});FilterChip(favoritesOnly,{favoritesOnly=true},label={Text("Watchlist")})}}
+        item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("All","Crypto","Stock-linked").forEach {cat->FilterChip(category==cat,{category=cat},label={Text(cat)})}}}
         if(rows.isEmpty()) item {EmptyState(if(favoritesOnly) "Your watchlist is empty" else "No market observations","${if(favoritesOnly) "Tap a star to save a market." else "Fresh prices appear when the backend observer connects."}",if(!favoritesOnly) "Refresh" else null){c.refresh()}}
         items(rows,key={it.getJSONObject("quote").getString("symbol")}) {m ->
             val q=m.getJSONObject("quote");val symbol=q.getString("symbol")
@@ -191,10 +199,10 @@ data class Confirmation(val title: String,val detail: String,val action: String,
                 Box(Modifier.size(42.dp).background(ZenColors.Raised,RoundedCornerShape(13.dp)),contentAlignment=Alignment.Center){Text(symbol.substringBefore('/').substringBefore('_').take(1),color=ZenColors.Blue,style=MaterialTheme.typography.titleLarge)}
                 Column(Modifier.weight(1f).padding(start=12.dp).clickable {onMarket(symbol)}) {
                     Text(symbol.substringBefore('/').substringBefore('_'),style=MaterialTheme.typography.titleMedium)
-                    Text(if(symbol.contains("_")) "USDT · Perpetual" else "${symbol.substringAfter('/')} · Spot",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+                    Text(if(symbol.contains("_")) if(m.optJSONObject("instrument")?.value("kind") in listOf("stock_linked_perpetual","index_linked_perpetual")) "Stock-linked · Perpetual" else "USDT · Perpetual" else "${symbol.substringAfter('/')} · Spot",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
                 }
                 Column(horizontalAlignment=Alignment.End,modifier=Modifier.clickable {onMarket(symbol)}) {
-                    Text(price(q.value("last")),fontFamily=FontFamily.Monospace,style=MaterialTheme.typography.titleMedium)
+                    Text(price(q.value("last")),fontFamily=ZenFonts.Mono,style=MaterialTheme.typography.titleMedium)
                     Text(if(m.optBoolean("stale")) "STALE" else q.value("change_percent")?.let {number(it)+"%"} ?: "Change unavailable",color=if(m.optBoolean("stale")) ZenColors.Muted else pnlColor(q.value("change_percent")),style=MaterialTheme.typography.bodySmall)
                 }
                 IconButton(onClick={favorites=if(symbol in favorites) favorites-symbol else favorites+symbol;prefs.edit().putStringSet("favorites",favorites).apply()}){Icon(if(symbol in favorites) Icons.Rounded.Star else Icons.Rounded.StarBorder,contentDescription=if(symbol in favorites) "Remove $symbol from watchlist" else "Add $symbol to watchlist",tint=if(symbol in favorites) ZenColors.Blue else ZenColors.Muted,modifier=Modifier.size(20.dp))}
@@ -224,7 +232,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
         if(rows.isEmpty()) item {EmptyState("No open positions","Open positions from your active trading workspace appear here.","Explore markets",onMarkets)}
         items(rows,key={it.getString("id")}) {p->SurfaceCard {
             SectionLabel(p.getString("symbol").replace("_"," / ")) {StatusPill((p.value("side") ?: "LONG")+" · "+(p.value("product") ?: "SPOT").uppercase(),if(p.value("side")=="SHORT") ZenColors.Red else ZenColors.Emerald)}
-            Text(signedMoney(p.value("unrealized")),style=MaterialTheme.typography.headlineMedium,color=pnlColor(p.value("unrealized")),fontFamily=FontFamily.Monospace)
+            Text(signedMoney(p.value("unrealized")),style=MaterialTheme.typography.headlineMedium,color=pnlColor(p.value("unrealized")),fontFamily=ZenFonts.Mono)
             Text("Unrealized P&L",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             Row(Modifier.fillMaxWidth()) {MiniMetric("Entry",price(p.value("entry")),modifier=Modifier.weight(1f));MiniMetric("Current mark",price(p.value("mark")),modifier=Modifier.weight(1f))}
             HorizontalDivider(color=ZenColors.Border)

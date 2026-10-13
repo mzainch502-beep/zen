@@ -12,10 +12,14 @@ from research.adaptive import evaluate,VERSION
 def process(db,u,symbol,rows):
     u=db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True))
     cfg=config(db,u.id)
-    if cfg.workspace!='futures':return
+    if cfg.workspace not in ['futures','combined']:return
     market=db.get(FuturesMarket,symbol)
     if not market:return
     limits=FuturesLimits.model_validate(cfg.limits);t=market.ticker
+    if limits.auto_risk:
+        from risk.adaptive import recommend
+        equity=Decimal(account(db,u.id)['portfolio']['equity'] or 0)
+        limits=FuturesLimits.model_validate(recommend(db,u.id,cfg.limits,equity,t)['effective_limits'])
     fee=max(float(market.contract.get('takerFeeRate',.0008)),.0008)
     d=evaluate(rows,t,limits.profile,learning_snapshot(db,u.id)['weights'],fee=fee,slippage_bps=float(limits.max_slippage_bps))
     key='fauto-'+hashlib.sha256(f'{u.id}:{symbol}:{VERSION}:{d.get("bar_timestamp",int(time.time()//60))}'.encode()).hexdigest()[:48]

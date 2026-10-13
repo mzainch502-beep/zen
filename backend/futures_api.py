@@ -13,7 +13,7 @@ from database.models import User,Connection,FuturesAccount,FuturesIntent,Futures
 from exchange_adapters.mexc_futures import MexcFutures,json_safe
 
 class Settings(Strict):
-    workspace:str=Field(pattern='^(spot|futures)$')
+    workspace:str=Field(pattern='^(spot|futures|combined)$')
     limits:FuturesLimits
     exchange_max:bool=False
 class Profile(Strict):
@@ -53,11 +53,11 @@ def install(app,db_dep,owner):
         # Explicitly selected simulated preset only. It never changes live permissions.
         limits=FuturesLimits(profile=body.profile,max_leverage=5 if aggressive else 1,max_margin=3,
             max_notional=80 if aggressive else 40,max_positions=3 if aggressive else 2,max_slippage_bps=5 if aggressive else 10,
-            max_loss_trade=2,max_daily_loss=6,max_drawdown=20,automatic=True)
-        c.workspace='futures';c.limits=limits.model_dump(mode='json');c.exchange_max=False
-        spot=dict(user.limits);spot['automatic']=False;user.limits=spot;user.mode='Paper'
+            max_loss_trade=2,max_daily_loss=6,max_drawdown=20,automatic=True,auto_risk=c.limits.get('auto_risk',False))
+        c.workspace='combined' if c.workspace=='combined' else 'futures';c.limits=limits.model_dump(mode='json');c.exchange_max=False
+        spot=dict(user.limits);spot['automatic']=c.workspace=='combined';user.limits=spot;user.mode='Paper'
         record(db,user.id,'paper_profile',{'profile':body.profile,'limits':c.limits,'paper':True})
-        db.commit();return {'saved':True,'mode':'Paper','workspace':'futures','profile':body.profile,'automatic':True}
+        db.commit();return {'saved':True,'mode':'Paper','workspace':c.workspace,'profile':body.profile,'automatic':True}
     @app.get('/futures/public-contracts')
     def public_contracts(db=Depends(db_dep)):
         # Public exchange data only. Never contains owners, balances or credentials.
@@ -71,7 +71,7 @@ def install(app,db_dep,owner):
     @app.put('/futures/settings')
     def save(body:Settings,u=Depends(owner),db=Depends(db_dep)):
         db.scalar(select(User).where(User.id==u.id).with_for_update().execution_options(populate_existing=True));c=config(db,u.id)
-        if c.activated and body.workspace=='spot':raise HTTPException(409,'Close and reconcile live exposure, then return to paper before changing workspace')
+        if c.activated and body.workspace!='futures':raise HTTPException(409,'Close and reconcile live exposure, then return to paper before changing workspace')
         body.limits.automatic=FuturesLimits.model_validate(c.limits).automatic
         if c.activated and body.limits.automatic:
             raise HTTPException(409,'Autonomous live strategy promotion remains pending')

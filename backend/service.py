@@ -20,6 +20,8 @@ def portfolio(db,u):
     marked=sum((p.quantity*qs[p.symbol].bid for p in ps if p.symbol in qs),Decimal(0))
     equity=None if stale else u.cash+marked
     orders=list(db.scalars(select(Order).where(Order.user_id==u.id,Order.state=='filled')))
+    reset=db.scalar(select(Record).where(Record.user_id==u.id,Record.kind=='portfolio_capital_reset').order_by(Record.created.desc()).limit(1))
+    if reset:orders=[o for o in orders if o.created>=reset.created]
     today=[o for o in orders if o.created>=midnight()]
     fees=sum((o.fee for o in orders),Decimal(0))
     daily=sum((o.realized-o.fee for o in today),Decimal(0))
@@ -51,11 +53,15 @@ def execute(db,owner,p: Proposal):
         positions=len(ps),existing_quantity=pos.quantity if pos else Decimal(0),orders_last_minute=len(recent),cooldown_until=cooldown)
     record(db,owner,'risk_approval',{'proposal':p.model_dump(mode='json'),'verdict':v.model_dump(mode='json')})
     if not v.approved: raise Rejected('; '.join(v.reasons))
+    if p.side=='buy':
+        from backend.treasury import entry_guard
+        entry_guard(db,owner,p.quantity*q.ask*(1+limits.max_slippage_bps/10000))
     if p.side=='buy' and pos: raise Rejected('Adding to an existing position requires aggregate stop-risk support')
     t0=time.perf_counter()
     price=q.ask*(1+limits.max_slippage_bps/10000) if p.side=='buy' else q.bid*(1-limits.max_slippage_bps/10000)
     fee=p.quantity*price*FEE
     realized=Decimal(0)
+    closed_context=None
     if p.side=='buy':
         u.cash-=p.quantity*price+fee
         pos=Position(user_id=owner,symbol=p.symbol,quantity=p.quantity,entry=price,entry_fees=fee,stop=p.stop,take_profit=p.take_profit)
@@ -66,7 +72,14 @@ def execute(db,owner,p: Proposal):
         pos.entry_fees-=allocated
         u.cash+=p.quantity*price-fee
         pos.quantity-=p.quantity
-        if pos.quantity==0: db.delete(pos)
+        if pos.quantity==0:
+            context=db.scalar(select(Record).where(Record.user_id==owner,Record.kind=='paper_spot_context',Record.payload['position_id'].as_string()==pos.id).limit(1))
+            if context:closed_context=(pos.id,context.payload)
+            db.delete(pos)
+        record(db,owner,'spot_realized',{'position_id':pos.id,'round_trip_net':str(realized-fee-allocated),'product':'spot','paper':True})
+    if closed_context:
+        from backend.learning import completed
+        completed(db,owner,*closed_context)
     o=Order(user_id=owner,client_id=p.idempotency_key,fingerprint=fp,symbol=p.symbol,side=p.side,
             quantity=p.quantity,filled=p.quantity,price=price,fee=fee,realized=realized,state='filled')
     db.add(o); db.flush()

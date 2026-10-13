@@ -30,17 +30,11 @@ import java.math.RoundingMode
 import java.util.UUID
 
 @Composable fun ZenMark(modifier: Modifier=Modifier) {
-    Canvas(modifier.semantics {contentDescription="ZEN monogram"}) {
-        val u=size.width/100f
-        drawRoundRect(androidx.compose.ui.graphics.Brush.linearGradient(listOf(ZenColors.Emerald,androidx.compose.ui.graphics.Color(0xFF39BCA8))),cornerRadius=androidx.compose.ui.geometry.CornerRadius(28*u))
-        // Two offset planes form an original, crisp Z; no exchange branding.
-        val top=Path().apply {moveTo(24*u,28*u);lineTo(77*u,28*u);lineTo(45*u,61*u);lineTo(26*u,61*u);lineTo(47*u,40*u);lineTo(24*u,40*u);close()}
-        val bottom=Path().apply {moveTo(73*u,72*u);lineTo(21*u,72*u);lineTo(53*u,39*u);lineTo(73*u,39*u);lineTo(51*u,60*u);lineTo(73*u,60*u);close()}
-        drawPath(top,ZenColors.Background);drawPath(bottom,ZenColors.Background.copy(alpha=.92f))
-    }
+    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_zen),contentDescription="ZEN institutional monogram",modifier=modifier)
 }
 @Composable fun MarketDetail(c: ZenController,symbol: String,onBack: ()->Unit,onConfirm: (Confirmation)->Unit) {
     val quote=c.markets.rows().find {it.getJSONObject("quote").getString("symbol")==symbol}?.getJSONObject("quote")
+    val instrument=c.markets.rows().find {it.getJSONObject("quote").getString("symbol")==symbol}?.optJSONObject("instrument")
     var orderDialog by remember(symbol) {mutableStateOf(false)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=22.dp,vertical=12.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
@@ -49,7 +43,7 @@ import java.util.UUID
             StatusPill(c.portfolio.value("mode") ?: "PAPER")
         }
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-            Text(money(quote?.value("last")),style=MaterialTheme.typography.headlineMedium,fontFamily=FontFamily.Monospace)
+            Text(money(quote?.value("last")),style=MaterialTheme.typography.headlineMedium,fontFamily=ZenFonts.Mono)
             Text(quote?.value("change_percent")?.let {number(it)+"% · 24h"} ?: "24h change unavailable",style=MaterialTheme.typography.bodySmall,color=pnlColor(quote?.value("change_percent")))
         }
         SurfaceCard {
@@ -60,6 +54,9 @@ import java.util.UUID
             if(c.candles.length()>0) CandleChart(c.candles,symbol)
             else if(!c.chartLoading) Text(c.chartError ?: "No candles received.",style=MaterialTheme.typography.bodyMedium,color=ZenColors.Muted)
             c.chartError?.let {Text(it,style=MaterialTheme.typography.bodySmall,color=ZenColors.Red);TextButton(onClick={c.chart(symbol,c.chartTimeframe)}){Text("Retry market data")}}
+        }
+        if(instrument?.value("kind") in listOf("stock_linked_perpetual","index_linked_perpetual")) SurfaceCard {
+            SectionLabel("Stock-linked derivative");Text(instrument?.value("notice") ?: "This derivative is not direct share ownership.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning);KeyValue("Underlying session",instrument?.value("underlying_session") ?: "Unverified");KeyValue("Corporate actions",instrument?.value("corporate_action_rules") ?: "Unverified")
         }
         SurfaceCard {
             SectionLabel("Execution conditions")
@@ -76,8 +73,8 @@ import java.util.UUID
             repeat(minOf(5,bids.length(),asks.length())) {i->
                 val b=bids.getJSONArray(i);val a=asks.getJSONArray(i)
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text("${number(b.get(0).toString())}  ${number(b.get(1).toString(),4)}",color=ZenColors.Emerald,style=MaterialTheme.typography.bodySmall,fontFamily=FontFamily.Monospace)
-                    Text("${number(a.get(0).toString())}  ${number(a.get(1).toString(),4)}",color=ZenColors.Red,style=MaterialTheme.typography.bodySmall,fontFamily=FontFamily.Monospace)
+                    Text("${number(b.get(0).toString())}  ${number(b.get(1).toString(),4)}",color=ZenColors.Emerald,style=MaterialTheme.typography.bodySmall,fontFamily=ZenFonts.Mono)
+                    Text("${number(a.get(0).toString())}  ${number(a.get(1).toString(),4)}",color=ZenColors.Red,style=MaterialTheme.typography.bodySmall,fontFamily=ZenFonts.Mono)
                 }
             }
             Text("Snapshot from ${c.depth.value("source") ?: "exchange"}; not a private order stream.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
@@ -96,7 +93,7 @@ import java.util.UUID
     val low=data.minOf {it.getDouble(3)};val high=data.maxOf {it.getDouble(2)};val span=(high-low).coerceAtLeast(.000001)
     Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-            Text("O ${number(bar.get(1).toString())}   C ${number(bar.get(4).toString())}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted,fontFamily=FontFamily.Monospace)
+            Text("O ${number(bar.get(1).toString())}   C ${number(bar.get(4).toString())}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted,fontFamily=ZenFonts.Mono)
             Text(java.text.SimpleDateFormat("MM/dd HH:mm",java.util.Locale.getDefault()).format(java.util.Date(bar.getLong(0))),style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
         }
         Row {

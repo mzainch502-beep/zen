@@ -24,6 +24,11 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     var health by mutableStateOf(JSONObject()); private set
     var candles by mutableStateOf(JSONArray()); private set
     var depth by mutableStateOf(JSONObject()); private set
+    var historyLoading by mutableStateOf(false); private set
+    var historyData by mutableStateOf(JSONObject()); private set
+    var riskData by mutableStateOf(JSONObject()); private set
+    var contextData by mutableStateOf(JSONObject()); private set
+    var capabilities by mutableStateOf(JSONObject()); private set
     var chartLoading by mutableStateOf(false); private set
     var chartError by mutableStateOf<String?>(null); private set
     var chartSymbol by mutableStateOf("BTC/USDT"); private set
@@ -84,6 +89,11 @@ class ZenController(val repository: ZenRepository, private val scope: CoroutineS
     fun automation(enabled: Boolean) = action(if(enabled) "Automatic paper entries enabled. The agent may choose WAIT." else "Automatic entries disabled. Protective exits remain active.") {
         repository.call("/agent/automation","PUT",JSONObject().put("enabled",enabled));refreshData()
     }
+    fun history(period:String) {scope.launch {historyLoading=true;try {historyData=JSONObject(repository.call("/portfolio/history?period=$period"))} catch(e:Exception){failure(e)} finally {historyLoading=false}}}
+    fun loadRisk() = action {riskData=JSONObject(repository.call("/risk/overview"))}
+    fun loadContext() = action {contextData=JSONObject(repository.call("/context/events"))}
+    fun loadCapabilities() = action {capabilities=JSONObject(repository.call("/platform/capabilities"))}
+    fun initializePortfolio(body:JSONObject) = action("Shared simulated capital initialized. Automatic research uses reviewed ceilings.") {repository.call("/portfolio/paper-capital","POST",body);refreshData();historyData=JSONObject(repository.call("/portfolio/history?period=1D"))}
     fun saveRisk(body: JSONObject) = action("Risk limits saved.") { repository.call("/risk","PUT",body);refreshData() }
     fun order(body: JSONObject) = action("Paper order completed. No exchange order was sent.") { repository.call("/paper/orders","POST",body);refreshData() }
     fun exits(id: String,stop: String,take: String) = action("Protective exits updated.") {

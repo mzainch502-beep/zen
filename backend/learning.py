@@ -20,7 +20,7 @@ def completed(db,owner,position_id,context):
     if not context.get('strategy') or context.get('strategy')=='manual':return
     db.flush()
     if db.scalar(select(Record).where(Record.user_id==owner,Record.kind=='paper_learning_outcome',Record.payload['position_id'].as_string()==position_id)):return
-    rows=list(db.scalars(select(Record).where(Record.user_id==owner,Record.kind=='trade_evaluation',Record.payload['position_id'].as_string()==position_id)))
+    rows=list(db.scalars(select(Record).where(Record.user_id==owner,Record.kind.in_(['trade_evaluation','spot_realized']),Record.payload['position_id'].as_string()==position_id)))
     from decimal import Decimal
     net=sum((Decimal(str(r.payload['round_trip_net'])) for r in rows if 'round_trip_net' in r.payload),Decimal(0))
     payload={'position_id':position_id,'strategy':context['strategy'],'regime':context.get('regime','unknown'),

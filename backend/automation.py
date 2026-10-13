@@ -7,7 +7,7 @@ from database.models import record
 
 def status(db, user):
     cfg = config(db, user.id)
-    futures = cfg.workspace == 'futures'
+    futures = cfg.workspace in ['futures','combined']
     live = bool(cfg.activated) or user.mode == 'Live'
     requested = FuturesLimits.model_validate(cfg.limits).automatic if futures else Limits.model_validate(user.limits).automatic
     blocked = 'Live strategy promotion and private execution validation are pending' if live else 'Emergency stop is active' if user.mode == 'Emergency Stop' else 'Workspace is paused' if user.mode == 'Paused' else None
@@ -26,8 +26,8 @@ def change(db, user, enabled):
     # dormant workspace armed after a switch. All changes hold the owner lock.
     spot = Limits.model_validate(user.limits).model_dump(mode='json')
     future = FuturesLimits.model_validate(cfg.limits).model_dump(mode='json')
-    spot['automatic'] = bool(enabled and cfg.workspace == 'spot')
-    future['automatic'] = bool(enabled and cfg.workspace == 'futures')
+    spot['automatic'] = bool(enabled and cfg.workspace in ['spot','combined'])
+    future['automatic'] = bool(enabled and cfg.workspace in ['futures','combined'])
     user.limits = spot
     cfg.limits = future
     after = status(db, user)
