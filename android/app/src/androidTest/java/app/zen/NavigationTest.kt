@@ -124,7 +124,8 @@ class NavigationTest {
         org.junit.Assert.assertEquals("aggressive",fixture.profileBody?.getString("profile"))
         compose.onNodeWithTag("automatic-trading-switch").assertIsOn()
         compose.onNodeWithTag("nav-AGENT").performClick()
-        compose.onNodeWithText("Learning journal").performScrollTo().assertExists()
+        compose.onNodeWithTag("agent-scroll").performScrollToNode(hasText("Learning journal"))
+        compose.onNodeWithText("Learning journal").assertIsDisplayed()
         capture("learning-desk")
     }
     @Test fun pausedLiveWorkspaceKeepsLiveLabel() {

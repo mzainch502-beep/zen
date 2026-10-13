@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.json.JSONObject
@@ -23,7 +24,8 @@ import org.json.JSONObject
     val p=c.portfolio;val r=c.research;val learning=r.optJSONObject("learning") ?: JSONObject()
     var details by remember {mutableStateOf(false)}
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp,14.dp,20.dp,24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
-        item {PageHeading("Overview",if(p.optBoolean("paper",true)) "Your paper trading desk" else "Your exchange account")}
+        item {PageHeading("Overview",if(p.optBoolean("paper",true)) "Paper desk · ${(r.value("profile") ?: "balanced").replaceFirstChar {it.uppercase()}}" else "Your exchange account")}
+        if(!c.futures.optBoolean("activated")) item {PaperProfileActions(c,onConfirm)}
         item {
             Eyebrow(if(p.optBoolean("paper",true)) "SIMULATED EQUITY · USDT" else "EQUITY · USDT")
             Spacer(Modifier.height(6.dp));Text(money(p.value("equity")),style=MaterialTheme.typography.displaySmall)
@@ -34,12 +36,6 @@ import org.json.JSONObject
             Row(Modifier.fillMaxWidth()){MiniMetric("Available",money(p.value("cash")),modifier=Modifier.weight(1f));MiniMetric("Open P&L",signedMoney(p.value("unrealized")),pnlColor(p.value("unrealized")),Modifier.weight(1f))}
             TextButton(onClick={details=!details},contentPadding=PaddingValues(0.dp)){Text(if(details) "Hide breakdown" else "Portfolio breakdown")}
             if(details){KeyValue("Net since start",signedMoney(p.value("net_pnl")));KeyValue("Fees",money(p.value("fees")));KeyValue("Funding",p.value("funding") ?: "Settlement unavailable");KeyValue("Exposure",money(p.value("exposure")))}
-        }}
-        item {SurfaceCard {
-            SectionLabel("Paper studio") {StatusPill((r.value("profile") ?: "balanced").uppercase(),ZenColors.Blue)}
-            Text("Choose your pace.",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold)
-            Text("Multiple hypotheses. Independent risk checks. A decision trail you can inspect.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
-            PaperProfileActions(c,onConfirm)
         }}
         item {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
             OutlinedButton(onClick=onMarkets,modifier=Modifier.weight(1f)){Text("Markets · ${c.markets.length()}")}
@@ -58,7 +54,7 @@ import org.json.JSONObject
 @Composable fun AgentScreen(c: ZenController,onConfirm: (Confirmation)->Unit) {
     val r=c.research;val learning=r.optJSONObject("learning") ?: JSONObject();val mode=c.portfolio.value("mode");val paused=mode!="Paper" && mode!="Live";val live=c.futures.optBoolean("activated")
     val decisions=(r.optJSONArray("candidates")?.rows() ?: c.events.rows().filter {it.value("kind")=="decision"}.map {it.getJSONObject("payload")})
-    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp,14.dp,20.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize().testTag("agent-scroll"),contentPadding=PaddingValues(20.dp,14.dp,20.dp,24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {PageHeading("Intelligence","See what the agent considered—and what happened.")}
         item {SurfaceCard {
             SectionLabel("Research desk"){StatusPill(if(paused) "PAUSED" else if(c.health.optBoolean("worker_online")) "SCANNING" else "OFFLINE")}
