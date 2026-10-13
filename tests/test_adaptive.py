@@ -96,3 +96,26 @@ def test_replay_reproducible_and_no_promotion():
 def test_unknown_contract_candles_rejected_without_network(world):
     db,owner,c,h=world
     assert c.get('/candles?symbol=NEWCOIN_USDT',headers=h).status_code==404
+
+
+def test_replay_never_reenters_at_open_after_learning_from_same_bar_close():
+    from research.replay import replay
+    ledger=replay(bars(kind='range'))['trade_ledger']
+    assert ledger
+    assert all(b['entry_bar']>a['exit_bar'] for a,b in zip(ledger,ledger[1:]))
+
+
+def test_failed_background_research_is_restarted_and_audited(world):
+    from backend.worker import revive
+    db,owner,c,h=world
+    async def run():
+        async def fail():raise RuntimeError('synthetic failure')
+        async def recover():return 'recovered'
+        t=asyncio.create_task(fail());await asyncio.gather(t,return_exceptions=True)
+        new=revive(t,recover,db,'synthetic_scanner')
+        assert await new=='recovered'
+    asyncio.run(run())
+    with db.sessions() as s:
+        r=s.scalar(select(Record).where(Record.kind=='background_restart'))
+        assert r.payload['error_type']=='RuntimeError'
+        assert 'synthetic failure' not in str(r.payload)

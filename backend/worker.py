@@ -41,6 +41,12 @@ class MarketObserver:
                 with self.db.sessions() as s: record(s,None,'observer_disconnect',{'source':'binance-ws'});s.commit()
                 await asyncio.sleep(5)
 
+def revive(task,factory,db,component):
+    if not task.done():return task
+    error='Cancelled' if task.cancelled() else type(task.exception()).__name__ if task.exception() else 'UnexpectedReturn'
+    with db.sessions() as s:record(s,None,'background_restart',{'component':component,'error_type':error});s.commit()
+    return asyncio.create_task(factory())
+
 async def run_futures_observer(db):
     from exchange_adapters.universe import catalogue,rotation
     from database.models import FuturesPaperPosition
@@ -80,6 +86,7 @@ async def run_futures_observer(db):
     scanner_task=asyncio.create_task(scanner())
     try:
         while True:
+            scanner_task=revive(scanner_task,scanner,db,"futures_research")
             started=time.monotonic()
             try:
                 if not metadata or cycle%60==0:
@@ -125,6 +132,7 @@ async def run():
         try:
             cycle=0
             while True:
+                futures_task=revive(futures_task,lambda:run_futures_observer(db),db,'futures_observer')
                 for symbol in SYMBOLS:
                     try: observer.store(await bounded_read(lambda:adapter.quote(symbol)))
                     except Exception:

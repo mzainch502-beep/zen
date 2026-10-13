@@ -8,7 +8,7 @@ def replay(rows,profile='aggressive',adaptive=True):
     split=int(len(rows)*.6);history=[];weights={};position=None;equity=200.;peak=equity;max_dd=0.;trades=[];decisions=0;waits=0
     fee=.0008;slip=.0005;spread=.0005
     for i in range(40,len(rows)):
-        bar=rows[i];ts=bar[0]/1000;open_price=float(bar[1])
+        bar=rows[i];ts=bar[0]/1000;open_price=float(bar[1]);closed_here=False
         if position:
             p=position;long=p['direction']=='LONG'
             stopped=float(bar[3])<=p['stop'] if long else float(bar[2])>=p['stop']
@@ -19,9 +19,9 @@ def replay(rows,profile='aggressive',adaptive=True):
                 price=raw*(1-spread/2-slip if long else 1+spread/2+slip)
                 net=p['qty']*(price-p['entry'])*(1 if long else -1)-fee*p['qty']*(price+p['entry'])
                 equity+=net;peak=max(peak,equity);max_dd=max(max_dd,peak-equity)
-                outcome={'position_id':str(p['bar']),'completed':True,'strategy':p['strategy'],'regime':p['regime'],'initial_risk':p['risk'],'net':net,'closed_at':ts,'oos':i>=split}
-                history.append(outcome);trades.append(outcome);weights=outcomes(history[-250:]) if adaptive else {};position=None
-        if position:continue
+                outcome={'position_id':str(p['bar']),'completed':True,'strategy':p['strategy'],'regime':p['regime'],'initial_risk':p['risk'],'net':net,'closed_at':ts+60,'entry_bar':p['bar'],'exit_bar':i,'oos':i>=split}
+                history.append(outcome);trades.append(outcome);weights=outcomes(history[-250:]) if adaptive else {};position=None;closed_here=True
+        if position or closed_here:continue
         closed=rows[max(0,i-100):i]
         ticker={'symbol':'REPLAY_USDT','bid1':open_price*(1-spread/2),'ask1':open_price*(1+spread/2),'lastPrice':open_price,'fairPrice':open_price,'timestamp':int(ts*1000),'fundingRate':0}
         d=evaluate(closed,ticker,profile,weights,now=ts,slippage_bps=slip*10000)
@@ -33,7 +33,7 @@ def replay(rows,profile='aggressive',adaptive=True):
     oos=[r for r in trades if r['oos']]
     return {'version':VERSION,'bars':len(rows),'train_bars':split,'oos_bars':len(rows)-split,'completed_trades':len(trades),'oos_trades':len(oos),
             'realized_net':round(equity-200,8),'oos_realized_net':round(sum(t['net'] for t in oos),8),'max_realized_drawdown':round(max_dd,8),
-            'decisions':decisions,'waits':waits,'open_exposure_excluded':bool(position),'adaptive':adaptive,'promoted':False,
+            'decisions':decisions,'waits':waits,'open_exposure_excluded':bool(position),'adaptive':adaptive,'promoted':False,'trade_ledger':trades,'replay_version':'2.0.1',
             'assumptions':{'round_trip_fee_bps':fee*20000,'one_way_slippage_bps':slip*10000,'modeled_spread_bps':spread*10000,'funding_settlement':'not modeled','stop_precedes_take_on_ambiguous_bar':True},
             'limitations':['Retrospective simulated fills','Short single-window split; not production validation','Funding settlement not modeled','Open unrealized exposure excluded from realized results','No guaranteed improvement']}
 

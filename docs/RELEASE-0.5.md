@@ -17,3 +17,5 @@ research/replay.py provides reproducible chronological train/out-of-sample repor
 Remaining: private exchange execution certification, native protective-order reconciliation, complete funding accounting, additional exchange futures adapters, broader walk-forward/shadow validation and production signing. Not 5x profitability/accuracy; no guaranteed improvement or daily return. All supported pairs refers to supported USDT-settled perpetuals, not every derivative product on every exchange.
 
 Operational limit: full decisions and learning history grow PostgreSQL storage. Monitor capacity and configure archival/backups before prolonged production use; small free/dev volumes are not unlimited historical storage.
+
+Replay correction 2.0.1: an exit observed within a candle cannot supply a learning outcome and a new entry at that candle's earlier open. Re-entry now waits until a subsequent candle. The corrected report retains entry/exit bar indices to verify temporal ordering. The original CI capture provided raw candles; current evidence is recalculated from those identical saved inputs with the corrected harness.
