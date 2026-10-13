@@ -74,6 +74,10 @@ class NavigationTest {
         compose.onNodeWithTag("nav-TRADE").performClick()
         compose.onNodeWithTag("nav-TRADE").assertIsSelected()
         compose.onNodeWithText("Search markets").assertExists();capture("markets")
+        compose.onNodeWithText("BTC").performClick()
+        compose.waitUntil(10000) {fixture.calls.any {it.startsWith("GET /candles")}}
+        capture("market-detail")
+        compose.onNodeWithContentDescription("Back to markets").performClick()
         compose.onNodeWithTag("nav-AI").performClick()
         compose.onNodeWithText("Intelligence").assertExists();capture("agent")
         compose.onNodeWithText("Pause new positions").performScrollTo().performClick()

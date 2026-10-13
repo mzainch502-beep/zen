@@ -38,7 +38,7 @@ import java.util.UUID
         }}
         item {Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick=onPortfolio,modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)){Text("Positions · ${c.positions.length()}")}
-            Button(onClick=onMarkets,modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)){Text("Explore markets")}
+            Button(onClick=onMarkets,modifier=Modifier.weight(1f).heightIn(min=48.dp),shape=RoundedCornerShape(12.dp)){Text("Markets")}
         }}
         item {PerformanceChart(c)}
         item {SurfaceCard {

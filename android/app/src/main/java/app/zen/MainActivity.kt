@@ -73,9 +73,9 @@ data class Confirmation(val title: String,val detail: String,val action: String,
             if(c.authorized) Surface(color=ZenColors.Header) {
                 Column(Modifier.statusBarsPadding().padding(horizontal=16.dp,vertical=4.dp)) {
                     Row(Modifier.fillMaxWidth().heightIn(min=52.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                        Row(Modifier.weight(1f),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                             ZenMark(Modifier.size(30.dp))
-                            Column {Text("ZEN",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.SemiBold,letterSpacing=2.sp)
+                            Column(Modifier.weight(1f)) {Text("ZEN",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.SemiBold,letterSpacing=2.sp)
                                 Text(if(!c.portfolio.optBoolean("paper",true)) if(mode=="Paused") "LIVE · PAUSED" else if(mode=="Emergency Stop") "LIVE · STOPPED" else "LIVE" else "PAPER · "+(c.portfolio.value("product") ?: "spot").uppercase(),style=MaterialTheme.typography.labelSmall.copy(fontSize=12.sp,letterSpacing=0.sp),color=if(!c.portfolio.optBoolean("paper",true)) ZenColors.Red else ZenColors.Gold)
                             }
                         }

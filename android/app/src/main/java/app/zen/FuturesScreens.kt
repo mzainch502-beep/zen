@@ -26,7 +26,7 @@ import java.util.UUID
     var phrase by remember {mutableStateOf("")}
     val connections=c.connections.rows().filter {it.optJSONObject("capabilities")?.value("product")=="futures"}
     ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=16.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Eyebrow("Trading controls")
             Text("Your trading environment",style=MaterialTheme.typography.headlineMedium)
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(10.dp)){FilterChip(workspace=="combined",{workspace="combined"},label={Text("Shared paper")});FilterChip(workspace=="spot",{workspace="spot"},label={Text("Spot")});FilterChip(workspace=="futures",{workspace="futures"},label={Text("Perpetual futures")})}
@@ -83,7 +83,7 @@ import java.util.UUID
     val amount=margin.toBigDecimalOrNull();val exposure=amount?.multiply(effective.toBigDecimal())
     val valid=amount?.signum()==1 && effective>0 && stop.toBigDecimalOrNull()?.signum()==1 && take.toBigDecimalOrNull()?.signum()==1
     ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=16.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             SectionLabel(symbol.replace("_"," / ")){StatusPill(if(paper) "PAPER" else "LIVE",if(paper) ZenColors.Blue else ZenColors.Red)}
             Row(horizontalArrangement=Arrangement.spacedBy(12.dp)){FilterChip(direction=="LONG",{direction="LONG"},label={Text("LONG")});FilterChip(direction=="SHORT",{direction="SHORT"},label={Text("SHORT")})}
             ZenField("Allocated margin · USDT",margin,{margin=it},"Exchange minimums apply")
@@ -107,7 +107,7 @@ import java.util.UUID
     val paper=p.optBoolean("paper",true)
     fun close(fraction: String) {val key=UUID.randomUUID().toString();onConfirm(Confirmation("${if(fraction=="1") "Close" else "Reduce"} ${p.value("side")} position","Reduce ${if(fraction=="1") "100" else "50"}% using a close-only futures order. ${if(paper) "This is simulated." else "Final exchange fills may differ; unresolved submissions block duplicates."}",if(fraction=="1") "Close position" else "Reduce 50%",true){c.futuresClose(p.getString("id"),fraction,key)})}
     ModalBottomSheet(onDismissRequest=onDismiss,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=ZenColors.Surface) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=16.dp).imePadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             SectionLabel(p.getString("symbol").replace("_"," / ")){StatusPill((p.value("side") ?: "—")+" · "+if(paper) "PAPER" else "LIVE")}
             Text(signedMoney(p.value("unrealized")),style=MaterialTheme.typography.displaySmall,color=pnlColor(p.value("unrealized")))
             KeyValue("Contracts",number(p.value("quantity"),4));KeyValue("Margin",money(p.value("allocated_margin")));KeyValue("Leverage",(p.value("leverage") ?: "—")+"× · "+(p.value("margin_mode") ?: "—"))
