@@ -62,3 +62,15 @@ def test_500_ceiling_uses_feasible_stop_leverage(world):
         d=process(s,s.get(User,u),'BTC_USDT',rows);s.commit()
         assert d['execution']=='filled',d
         assert 1<=d['effective_leverage']<500
+
+
+def test_candle_backoff_is_bounded_and_does_not_starve_other_markets():
+    from exchange_adapters.universe import CandleBackoff
+    b=CandleBackoff();b.failed('BAD_USDT',0)
+    assert b.blocked(59)=={'BAD_USDT'} and not b.blocked(60)
+    for _ in range(50):b.failed('BAD_USDT',100)
+    assert b.until['BAD_USDT']==1000
+    market=SimpleNamespace(symbol='GOOD_USDT',contract=meta(),ticker={**tick(),'amount24':'10000000'},received=time.time())
+    selected,_=rotation([market],0,24,['BAD_USDT'],b.blocked(101))
+    assert selected==['GOOD_USDT']
+    b.succeeded('BAD_USDT');assert not b.failures and not b.until

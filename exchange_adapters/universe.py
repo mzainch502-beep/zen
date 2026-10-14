@@ -13,9 +13,11 @@ def catalogue(rows):
         except (ValueError,KeyError,TypeError,DecimalException):continue
     return result
 
-def rotation(markets,cursor,batch=12,held=()):
+def rotation(markets,cursor,batch=12,held=(),blocked=()):
+    blocked=set(blocked)
     eligible=[]
     for m in markets:
+        if m.symbol in blocked:continue
         t=m.ticker;c=m.contract
         try:
             bid,ask,last=(Decimal(str(t[k])) for k in ['bid1','ask1','lastPrice'])
@@ -28,7 +30,7 @@ def rotation(markets,cursor,batch=12,held=()):
     if not symbols:return [],0
     # Prioritize volatility among already liquid/tight-spread markets, then fairly
     # rotate the full eligible catalogue. No forced trade count or target feedback.
-    priority=list(dict.fromkeys(held))
+    priority=list(dict.fromkeys(s for s in held if s not in blocked))
     if priority:priority=(priority[cursor%len(priority):]+priority[:cursor%len(priority)])[:batch//2]
     volatile=[x[0] for x in sorted(eligible,key=lambda x:(-x[2],-x[1],x[0]))[:max(1,batch//4)]]
     anchors=list(dict.fromkeys([*priority,*volatile,*symbols[:2]]))[:max(1,batch*2//3)]
@@ -37,3 +39,12 @@ def rotation(markets,cursor,batch=12,held=()):
         symbol=symbols[(start+consumed)%len(symbols)];consumed+=1
         if symbol not in selected:selected.append(symbol)
     return selected,(start+consumed)%len(symbols)
+
+class CandleBackoff:
+    """Process-local bounded retry schedule; successful reads clear failure state."""
+    def __init__(self):self.failures={};self.until={}
+    def failed(self,symbol,now):
+        n=min(5,self.failures.get(symbol,0)+1);self.failures[symbol]=n
+        self.until[symbol]=now+min(900,30*2**n)
+    def succeeded(self,symbol):self.failures.pop(symbol,None);self.until.pop(symbol,None)
+    def blocked(self,now):return {s for s,t in self.until.items() if t>now}

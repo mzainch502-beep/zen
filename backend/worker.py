@@ -48,22 +48,25 @@ def revive(task,factory,db,component):
     return asyncio.create_task(factory())
 
 async def run_futures_observer(db):
-    from exchange_adapters.universe import catalogue,rotation
+    from exchange_adapters.universe import catalogue,rotation,CandleBackoff
     from backend.shadow import pending_symbols
     from database.models import FuturesPaperPosition
     futures=MexcFutures();cycle=0;metadata={};cursor=0
-    semaphore=asyncio.Semaphore(3)
+    semaphore=asyncio.Semaphore(3);backoff=CandleBackoff()
     async def candles(symbol):
         async with semaphore:
-            try:return symbol,[r for r in await futures.candles(symbol) if r[0]/1000+60<=time.time()]
-            except Exception:return symbol,None
+            try:
+                rows=[r for r in await futures.candles(symbol) if r[0]/1000+60<=time.time()]
+                backoff.succeeded(symbol);return symbol,rows
+            except Exception:
+                backoff.failed(symbol,time.monotonic());return symbol,None
     async def scanner():
         nonlocal cursor
         while True:
             with db.sessions() as s:owners=list(s.scalars(select(User)))
             with db.sessions() as s:
                 held=list(s.scalars(select(FuturesPaperPosition.symbol)))+pending_symbols(s)
-                batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,24,held)
+                batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,24,held,backoff.blocked(time.monotonic()))
             rows=await asyncio.gather(*(candles(symbol) for symbol in batch))
             for u in owners:
                 scanned=0;failed=0;fills=0;vetoes=0
@@ -82,7 +85,7 @@ async def run_futures_observer(db):
                     except Exception as e:
                         failed+=1
                         with db.sessions() as s:record(s,u.id,'research_error',{'symbol':symbol,'error_type':type(e).__name__});s.commit()
-                with db.sessions() as s:record(s,u.id,'scan_summary',{'catalogue':len(metadata),'batch':len(batch),'evaluated':scanned,'data_errors':failed,'fills':fills,'risk_vetoes':vetoes,'cursor':cursor});s.commit()
+                with db.sessions() as s:record(s,u.id,'scan_summary',{'catalogue':len(metadata),'batch':len(batch),'evaluated':scanned,'data_errors':failed,'candle_backoff':len(backoff.blocked(time.monotonic())),'fills':fills,'risk_vetoes':vetoes,'cursor':cursor});s.commit()
             await asyncio.sleep(30)
     scanner_task=asyncio.create_task(scanner())
     try:
