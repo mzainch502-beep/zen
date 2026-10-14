@@ -52,7 +52,7 @@ data class Confirmation(val title: String,val detail: String,val action: String,
     val context=LocalContext.current
     val prefs=remember {context.getSharedPreferences("zen_preferences",android.content.Context.MODE_PRIVATE)}
     var light by remember {mutableStateOf(prefs.getBoolean("light_theme",false))}
-    SideEffect {(context as? android.app.Activity)?.let {activity->if(android.os.Build.VERSION.SDK_INT>=29) activity.window.isNavigationBarContrastEnforced=false;activity.window.navigationBarColor=android.graphics.Color.parseColor(if(light) "#F4F7FB" else "#080D18");androidx.core.view.WindowInsetsControllerCompat(activity.window,activity.window.decorView).apply {isAppearanceLightStatusBars=light;isAppearanceLightNavigationBars=light}}}
+    SideEffect {(context as? android.app.Activity)?.let {activity->if(android.os.Build.VERSION.SDK_INT>=29) activity.window.isNavigationBarContrastEnforced=false;activity.window.navigationBarColor=android.graphics.Color.parseColor(if(light) "#F3F5F8" else "#0C1017");androidx.core.view.WindowInsetsControllerCompat(activity.window,activity.window.decorView).apply {isAppearanceLightStatusBars=light;isAppearanceLightNavigationBars=light}}}
     ZenTheme(light=light) {
         val repo=remember(repository) {repository ?: Api(context)}
         val scope=rememberCoroutineScope()

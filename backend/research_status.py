@@ -16,5 +16,9 @@ def status(db,owner):
             'fresh_markets':db.scalar(select(func.count()).select_from(FuturesMarket).where(FuturesMarket.received>time.time()-15)),
             'scan':scans.payload if scans else None,'last_scan_at':scans.created if scans else None,
             'recent_evaluations':len(decisions),'entry_results':dict(counts),
+            'scan_stale':scans is None or time.time()-scans.created>180,
+            'scan_age_seconds':round(time.time()-scans.created) if scans else None,
+            'selection_policy':'Volatility and liquidity priority with full-catalogue rotation',
+            'next_step':'Review top veto reasons; targets never force entries',
             'top_wait_reasons':[{'reason':r,'count':n} for r,n in blocks.most_common(5)],
             'candidates':decisions[:12],'learning':learning(db,owner),'paper':True,'live_promotion':False}

@@ -57,9 +57,13 @@ import org.json.JSONObject
     LazyColumn(Modifier.fillMaxSize().testTag("agent-scroll"),contentPadding=PaddingValues(16.dp,12.dp,16.dp,20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {PageHeading("Intelligence","Market assessment and decision evidence")}
         item {SurfaceCard {
-            SectionLabel("Research desk"){StatusPill(if(paused) "PAUSED" else if(c.health.optBoolean("worker_online")) "SCANNING" else "OFFLINE")}
+            SectionLabel("Research desk"){StatusPill(if(paused) "PAUSED" else if(r.optBoolean("scan_stale")) "STALE SCAN" else if(c.health.optBoolean("worker_online")) "SCANNING" else "OFFLINE")}
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){MiniMetric("Markets",r.value("catalogue_count") ?: "—",modifier=Modifier.weight(1f));MiniMetric("Evaluations",r.value("recent_evaluations") ?: "—",modifier=Modifier.weight(1f))}
             Text("${(r.value("profile") ?: "balanced").replaceFirstChar {it.uppercase()}} research · ${if(live) "live permissions" else "paper workspace"}",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+            r.value("scan_age_seconds")?.let {KeyValue("Last scan",it+"s ago")}
+            r.optJSONObject("scan")?.let {scan->Text("Last batch · ${scan.optInt("evaluated")} evaluated · ${scan.optInt("fills")} fills · ${scan.optInt("risk_vetoes")} vetoes",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
+            if(r.optBoolean("scan_stale")) Text("No recent completed scan. Check backend connectivity before expecting entries.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning)
+            DetailDisclosure("Research profile","Select the pace of paper experiments","research-profile"){PaperProfileActions(c,onConfirm)}
             PrimaryAction(if(paused) "Resume workspace" else "Pause new positions",!c.loading){onConfirm(Confirmation(if(paused) "Resume workspace" else "Pause new positions","Protective exits continue. Resuming keeps your saved automation preference.",if(paused) "Resume" else "Pause"){if(paused && live) c.activateFutures(c.futures.getString("live_connection_id"),"I AUTHORIZE LIVE FUTURES") else c.mode(if(paused) "Paper" else "Paused")})}
         }}
         item {SectionLabel("Learning journal")}
@@ -67,21 +71,23 @@ import org.json.JSONObject
             Text((learning.value("status") ?: "Collecting outcomes").replaceFirstChar {it.uppercase()},style=MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text("Completed exposures",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted,modifier=Modifier.weight(1f));Text(learning.value("samples") ?: "0",style=MaterialTheme.typography.titleMedium,fontFamily=ZenFonts.Mono)}
 
+            learning.optJSONObject("shadow")?.let {sh->Text("Forward shadow trials · ${sh.optInt("open")} active / ${sh.optInt("completed")} completed",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)}
             val weights=learning.optJSONObject("weights")
             val entries=weights?.keys()?.asSequence()?.toList()?.sorted().orEmpty()
             val suspended=entries.count {weights!!.getJSONObject(it).optBoolean("suspended")}
             if(suspended>0) Text("$suspended of ${entries.size} groups need review after losses. Their entries remain withheld.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Warning)
             DetailDisclosure("Review learning evidence","${entries.size} strategy groups · model details","learning-details") {
             KeyValue("Model",learning.value("version") ?: "contextual-paper-v2")
-            Text("Outcomes adjust bounded preferences. Improvement is measured, never assumed. No timed or validated shadow recovery is available.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
+            Text(if(learning.has("shadow")) "Suspended groups collect forward shadow trials without placing orders. Eight completed trials with a positive net result, five wins and a profit factor above 1.25 can permit paper probation. This does not validate live promotion." else "Outcomes adjust bounded preferences. Forward recovery status is unavailable from this backend.",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
             entries.forEach {key->val w=weights!!.getJSONObject(key)
                 Column(Modifier.fillMaxWidth().padding(vertical=6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     Text(key.substringBefore(':').replace('_',' ').replaceFirstChar {it.uppercase()}+" · "+key.substringAfter(':').replace('_',' '),style=MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
                         Text("${w.optInt("samples")} completed trials",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
-                        Text(if(w.optBoolean("suspended")) "Review required" else "Bias "+number(w.value("weight"),3),style=MaterialTheme.typography.bodySmall,color=if(w.optBoolean("suspended")) ZenColors.Warning else ZenColors.Muted)
+                        Text(if(w.has("recovery_status")) (w.value("recovery_status") ?: "Review required") else if(w.optBoolean("suspended")) "Review required" else "Bias "+number(w.value("weight"),3),style=MaterialTheme.typography.bodySmall,color=if(w.optBoolean("suspended")) ZenColors.Warning else ZenColors.Muted)
                     }
                 }
+                if(w.has("recovery_samples")) Text("${w.optInt("recovery_samples")} / ${w.optInt("recovery_required")} forward trials",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
                 HorizontalDivider(color=ZenColors.Border)
             }
             }

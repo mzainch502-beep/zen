@@ -10,10 +10,14 @@ def history(db,owner):
 
 def snapshot(db,owner):
     rows=history(db,owner);weights=outcomes(rows)
+    from backend.shadow import trials,apply_recovery
+    shadow=[r.payload for r in trials(db,owner)]
+    weights=apply_recovery(weights,rows,shadow)
     changes=db.scalar(select(Record).where(Record.user_id==owner,Record.kind=='learning_update').order_by(Record.created.desc()).limit(1))
     return {'version':VERSION,'samples':len(rows),'weights':weights,'net':str(sum((Decimal(str(r['net'])) for r in rows),Decimal(0))),
             'status':'collecting outcomes' if len(rows)<5 else 'bounded paper adaptation',
             'last_change':changes.payload if changes else None,'calibration':None,
+            'shadow':{'open':sum(r['state']=='open' for r in shadow),'completed':sum(r['state']=='closed' for r in shadow),'required_per_group':8,'paper_only':True},
             'notice':'Updates can improve or worsen results. Live promotion and predictive accuracy are not established.'}
 
 def completed(db,owner,position_id,context):

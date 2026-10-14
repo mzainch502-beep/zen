@@ -21,7 +21,11 @@ def process(db,u,symbol,rows):
         equity=Decimal(account(db,u.id)['portfolio']['equity'] or 0)
         limits=FuturesLimits.model_validate(recommend(db,u.id,cfg.limits,equity,t)['effective_limits'])
     fee=max(float(market.contract.get('takerFeeRate',.0008)),.0008)
-    d=evaluate(rows,t,limits.profile,learning_snapshot(db,u.id)['weights'],fee=fee,slippage_bps=float(limits.max_slippage_bps))
+    weights=learning_snapshot(db,u.id)['weights']
+    d=evaluate(rows,t,limits.profile,weights,fee=fee,slippage_bps=float(limits.max_slippage_bps))
+    if not cfg.activated and u.mode=='Paper' and d.get('bar_timestamp'):
+        from backend.shadow import advance
+        advance(db,u.id,symbol,rows,d,weights)
     key='fauto-'+hashlib.sha256(f'{u.id}:{symbol}:{VERSION}:{d.get("bar_timestamp",int(time.time()//60))}'.encode()).hexdigest()[:48]
     if db.scalar(select(Record).where(Record.user_id==u.id,Record.kind=='decision',Record.payload['decision_key'].as_string()==key)):return
     d.update(symbol=symbol,decision_key=key,profile=limits.profile,execution='not_requested')
@@ -30,7 +34,12 @@ def process(db,u,symbol,rows):
     if not blocked and d['action'] in ['LONG','SHORT']:
         snap=account(db,u.id);cash=Decimal(snap['portfolio']['cash'])
         exposure=Decimal(snap['portfolio']['exposure'] or 0)
-        c=Contract.parse(market.contract);lev=min(limits.max_leverage,c.max_leverage)
+        c=Contract.parse(market.contract)
+        # Stop distance, maintenance margin and costs constrain usable leverage.
+        # A configured ceiling must not make every valid hypothesis fail liquidation checks.
+        fraction=Decimal(str(d['stop_fraction']))
+        buffer=max(fraction*Decimal('1.2'),limits.min_liquidation_distance)+c.mmr+Decimal(str(fee))*2+limits.max_slippage_bps*3/10000
+        lev=min(limits.max_leverage,c.max_leverage,max(1,int(Decimal(1)/buffer)),max(1,int(Decimal(1)/c.imr)) if c.imr else 500)
         # Size down to available notional, exchange IMR and stop-loss budget.
         fraction=Decimal(str(d['stop_fraction']));fee_d=Decimal(str(fee));funding=abs(Decimal(str(t.get('fundingRate',0))))
         loss_fraction=fraction+fee_d*2+limits.max_slippage_bps*3/10000+funding
@@ -54,5 +63,6 @@ def process(db,u,symbol,rows):
             except (Rejected,ValueError) as e:
                 d.update(execution='risk_veto',execution_reason=str(e));record(db,u.id,'risk_veto',{'reason':str(e),'decision_key':key,'product':'paper_futures'})
         else:d.update(execution='risk_veto',execution_reason='No available allocation within limits')
+    if d.get('action') in ['LONG','SHORT'] and not blocked:d.update(requested_leverage_ceiling=limits.max_leverage,effective_leverage=lev)
     record(db,u.id,'decision',d)
     return d

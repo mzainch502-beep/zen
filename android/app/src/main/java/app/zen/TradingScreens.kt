@@ -104,7 +104,7 @@ import java.util.UUID
                 fun y(price: Double)=((high-price)/span*size.height).toFloat()
                 repeat(4) {i->val level=size.height*i/3;drawLine(ZenColors.Border.copy(alpha=.5f),Offset(0f,level),Offset(size.width,level),.5f)}
                 data.forEachIndexed {i,r->
-                    val open=r.getDouble(1);val close=r.getDouble(4);val color=if(close>=open) ZenColors.Emerald else ZenColors.Red;val x=(i+.5f)*step
+                    val open=r.getDouble(1);val close=r.getDouble(4);val color=if(close>=open) ZenColors.Positive else ZenColors.Red;val x=(i+.5f)*step
                     drawLine(color,Offset(x,y(r.getDouble(2))),Offset(x,y(r.getDouble(3))),1f)
                     drawRect(color,Offset(x-step*.29f,minOf(y(open),y(close))),Size(step*.58f,kotlin.math.abs(y(open)-y(close)).coerceAtLeast(1f)))
                 }

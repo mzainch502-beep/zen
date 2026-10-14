@@ -49,6 +49,7 @@ def revive(task,factory,db,component):
 
 async def run_futures_observer(db):
     from exchange_adapters.universe import catalogue,rotation
+    from backend.shadow import pending_symbols
     from database.models import FuturesPaperPosition
     futures=MexcFutures();cycle=0;metadata={};cursor=0
     semaphore=asyncio.Semaphore(3)
@@ -61,8 +62,8 @@ async def run_futures_observer(db):
         while True:
             with db.sessions() as s:owners=list(s.scalars(select(User)))
             with db.sessions() as s:
-                held=list(s.scalars(select(FuturesPaperPosition.symbol)))
-                batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,12,held)
+                held=list(s.scalars(select(FuturesPaperPosition.symbol)))+pending_symbols(s)
+                batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,24,held)
             rows=await asyncio.gather(*(candles(symbol) for symbol in batch))
             for u in owners:
                 scanned=0;failed=0;fills=0;vetoes=0

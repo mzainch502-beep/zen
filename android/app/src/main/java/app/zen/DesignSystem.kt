@@ -30,24 +30,24 @@ object ZenFonts {
     val Mono=FontFamily(Font(R.font.ibm_plex_mono))
 }
 object ZenColors {
-    var Background by mutableStateOf(Color(0xFF080D18));var Header by mutableStateOf(Color(0xFF101827))
-    var Surface by mutableStateOf(Color(0xFF151F30));var Raised by mutableStateOf(Color(0xFF1C293B))
-    var Border by mutableStateOf(Color(0xFF28364A));var Text by mutableStateOf(Color(0xFFF4F7FB))
-    var Muted by mutableStateOf(Color(0xFF96A5B8));var Emerald by mutableStateOf(Color(0xFF00D4AA))
-    var Gold by mutableStateOf(Color(0xFFC5A46D));var Positive by mutableStateOf(Color(0xFF19C58B))
-    var Red by mutableStateOf(Color(0xFFF06472));var Warning by mutableStateOf(Color(0xFFF4B860));var Blue by mutableStateOf(Color(0xFF96A5B8))
+    var Background by mutableStateOf(Color(0xFF0C1017));var Header by mutableStateOf(Color(0xFF111720))
+    var Surface by mutableStateOf(Color(0xFF171E29));var Raised by mutableStateOf(Color(0xFF232D3B))
+    var Border by mutableStateOf(Color(0xFF303C4D));var Text by mutableStateOf(Color(0xFFF3F5F8))
+    var Muted by mutableStateOf(Color(0xFFA3AFC0));var Emerald by mutableStateOf(Color(0xFFA7C5F4))
+    var Gold by mutableStateOf(Color(0xFFC8B994));var Positive by mutableStateOf(Color(0xFF19C58B))
+    var Red by mutableStateOf(Color(0xFFF06472));var Warning by mutableStateOf(Color(0xFFF4B860));var Blue by mutableStateOf(Color(0xFFA3AFC0))
     fun apply(light:Boolean) {
-        Background=Color(if(light) 0xFFF4F7FB else 0xFF080D18);Header=Color(if(light) 0xFFE8EEF6 else 0xFF101827)
-        Surface=Color(if(light) 0xFFFFFFFF else 0xFF151F30);Raised=Color(if(light) 0xFFEDF2F8 else 0xFF1C293B)
-        Border=Color(if(light) 0xFFCAD5E2 else 0xFF28364A);Text=Color(if(light) 0xFF142238 else 0xFFF4F7FB)
-        Muted=Color(if(light) 0xFF4C6078 else 0xFF96A5B8);Emerald=Color(if(light) 0xFF006D59 else 0xFF00D4AA)
-        Gold=Color(if(light) 0xFF7A5B22 else 0xFFC5A46D);Positive=Color(if(light) 0xFF007D56 else 0xFF19C58B)
+        Background=Color(if(light) 0xFFF3F5F8 else 0xFF0C1017);Header=Color(if(light) 0xFFE9EEF5 else 0xFF111720)
+        Surface=Color(if(light) 0xFFFFFFFF else 0xFF171E29);Raised=Color(if(light) 0xFFEDF1F6 else 0xFF232D3B)
+        Border=Color(if(light) 0xFFC8D2DF else 0xFF303C4D);Text=Color(if(light) 0xFF172438 else 0xFFF3F5F8)
+        Muted=Color(if(light) 0xFF526277 else 0xFFA3AFC0);Emerald=Color(if(light) 0xFF315A91 else 0xFFA7C5F4)
+        Gold=Color(if(light) 0xFF75613C else 0xFFC8B994);Positive=Color(if(light) 0xFF007D56 else 0xFF19C58B)
         Red=Color(if(light) 0xFFBA2237 else 0xFFF06472);Warning=Color(if(light) 0xFF935900 else 0xFFF4B860);Blue=Muted
     }
 }
 @Composable fun ZenTheme(light:Boolean=false,content: @Composable ()->Unit) {
     SideEffect {ZenColors.apply(light)}
-    val scheme=if(light) lightColorScheme(primary=Color(0xFF006D59),onPrimary=Color.White,secondary=Color(0xFF006D59),secondaryContainer=Color(0xFFDDF4EC),onSecondaryContainer=Color(0xFF005441),tertiary=Color(0xFF7A5B22),background=Color(0xFFF4F7FB),surface=Color.White,surfaceVariant=Color(0xFFEDF2F8),onSurface=Color(0xFF142238),onSurfaceVariant=Color(0xFF4C6078),outline=Color(0xFFCAD5E2),error=Color(0xFFBA2237)) else darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,secondary=ZenColors.Emerald,secondaryContainer=Color(0xFF163E38),onSecondaryContainer=Color(0xFFB7F4E5),tertiary=ZenColors.Gold,
+    val scheme=if(light) lightColorScheme(primary=Color(0xFF315A91),onPrimary=Color.White,secondary=Color(0xFF315A91),secondaryContainer=Color(0xFFE0EAF9),onSecondaryContainer=Color(0xFF274A78),tertiary=Color(0xFF75613C),background=Color(0xFFF3F5F8),surface=Color.White,surfaceVariant=Color(0xFFEDF1F6),onSurface=Color(0xFF172438),onSurfaceVariant=Color(0xFF526277),outline=Color(0xFFC8D2DF),error=Color(0xFFBA2237)) else darkColorScheme(primary=ZenColors.Emerald,onPrimary=ZenColors.Background,secondary=ZenColors.Emerald,secondaryContainer=Color(0xFF263951),onSecondaryContainer=Color(0xFFD6E5FC),tertiary=ZenColors.Gold,
         background=ZenColors.Background,surface=ZenColors.Surface,surfaceVariant=ZenColors.Raised,
         onSurface=ZenColors.Text,onSurfaceVariant=ZenColors.Muted,outline=ZenColors.Border,error=ZenColors.Red)
     MaterialTheme(colorScheme=scheme,

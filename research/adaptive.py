@@ -5,7 +5,7 @@ never mutates code, increases leverage, or claims calibrated probabilities.
 """
 import math,time
 from statistics import mean,pstdev
-VERSION='contextual-paper-v2'
+VERSION='contextual-paper-v3'
 STRATEGIES=('momentum','pullback','range_reversion')
 
 def outcomes(rows):
@@ -45,7 +45,11 @@ def evaluate(rows,ticker,profile='balanced',learning=None,now=None,fee=.0008,sli
     spread=(ask-bid)/last*10000
     regime='liquidity_stress' if spread>30 else 'expansion' if base and vol>base*2 else 'trend' if abs(drift)>max(vol*2,.001) else 'range'
     result['regime']=regime
-    funding=abs(float(ticker.get('fundingRate',0)))
+    try:
+        funding=abs(float(ticker.get('fundingRate',0)))
+        if not all(math.isfinite(x) and x>=0 for x in (funding,fee,slippage_bps)):raise ValueError()
+    except (TypeError,ValueError):
+        result['reason']='Invalid execution cost inputs';return result
     cost=fee*2+slippage_bps*2/10000+spread/10000+funding
     result['estimated_cost_bps']=round(cost*10000,3)
     result['stop_fraction']=min(.025,max(.0025,atr*1.5))
@@ -75,7 +79,7 @@ def evaluate(rows,ticker,profile='balanced',learning=None,now=None,fee=.0008,sli
         eligible=score>=threshold and move>cost*1.2 and not suspended
         reason='Recent loss streak suspends this strategy/regime' if suspended else 'Movement estimate below costs' if move<=cost*1.2 else 'Evidence score below profile threshold' if score<threshold else 'Eligible paper hypothesis'
         result['opportunities'].append({'strategy':strategy,'direction':side,'score':round(score,4),'estimated_move_bps':round(move*10000,3),
-            'estimated_net_move_bps':round((move-cost)*10000,3),'cost_bps':round(cost*10000,3),'eligible':eligible,'reason':reason,
+            'estimated_net_move_bps':round((move-cost)*10000,3),'cost_bps':round(cost*10000,3),'eligible':eligible,'research_eligible':score>=threshold and move>cost*1.2,'reason':reason,
             'learning_samples':learned.get('samples',0),'learning_adjustment':adjustment,'evidence':evidence})
     result['opportunities'].sort(key=lambda x:x['score'],reverse=True)
     chosen=next((x for x in result['opportunities'] if x['eligible']),None)

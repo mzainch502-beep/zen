@@ -34,7 +34,7 @@ class Exits(Strict):
 
 def create_app(database=None):
     database=database or Database()
-    app=FastAPI(title='ZEN Paper API',version='0.6.0')
+    app=FastAPI(title='ZEN Paper API',version='0.8.0')
     app.state.database=database
     login_attempts=deque()
     def login_budget():
