@@ -84,7 +84,7 @@ import org.json.JSONObject
                     Text(key.substringBefore(':').replace('_',' ').replaceFirstChar {it.uppercase()}+" · "+key.substringAfter(':').replace('_',' '),style=MaterialTheme.typography.titleMedium)
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
                         Text("${w.optInt("samples")} completed trials",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
-                        Text(if(w.has("recovery_status")) (w.value("recovery_status") ?: "Review required") else if(w.optBoolean("suspended")) "Review required" else "Bias "+number(w.value("weight"),3),style=MaterialTheme.typography.bodySmall,color=if(w.optBoolean("suspended")) ZenColors.Warning else ZenColors.Muted)
+                        Text(if(w.has("recovery_status")) (if(w.optBoolean("suspended")) "Shadow review" else "Paper probation") else if(w.optBoolean("suspended")) "Review required" else "Bias "+number(w.value("weight"),3),style=MaterialTheme.typography.bodySmall,color=if(w.optBoolean("suspended")) ZenColors.Warning else ZenColors.Muted)
                     }
                 }
                 if(w.has("recovery_samples")) Text("${w.optInt("recovery_samples")} / ${w.optInt("recovery_required")} forward trials",style=MaterialTheme.typography.bodySmall,color=ZenColors.Muted)
