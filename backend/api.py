@@ -63,11 +63,12 @@ def create_app(database=None):
     def health(db=Depends(db_dep)):
         db.execute(select(1))
         heartbeat=db.scalar(select(Record).where(Record.kind=='worker_heartbeat').order_by(Record.created.desc()).limit(1))
+        scanner=db.scalar(select(Record).where(Record.kind=='research_scan_heartbeat').order_by(Record.created.desc()).limit(1))
         executor=db.scalar(select(Record).where(Record.kind=='executor_heartbeat').order_by(Record.created.desc()).limit(1))
         from database.models import FuturesMarket
         futures_markets=list(db.scalars(select(FuturesMarket)))
         public=[{'symbol':m.symbol,'max_leverage':m.contract.get('maxLeverage'),'api_allowed':m.contract.get('apiAllowed'),'fresh':time.time()-m.received<15} for m in futures_markets[:20]]
-        return {'status':'ok','live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'futures_catalogue_count':len(futures_markets),'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
+        return {'status':'ok','research_scanner_online':bool(scanner and time.time()-scanner.created<180),'research_market_reads':scanner.payload if scanner else None,'live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'futures_catalogue_count':len(futures_markets),'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
     @app.post('/auth/setup')
     def setup(body: Setup,db=Depends(db_dep)):
         login_budget()

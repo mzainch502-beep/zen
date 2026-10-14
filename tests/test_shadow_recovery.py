@@ -74,3 +74,14 @@ def test_candle_backoff_is_bounded_and_does_not_starve_other_markets():
     selected,_=rotation([market],0,24,['BAD_USDT'],b.blocked(101))
     assert selected==['GOOD_USDT']
     b.succeeded('BAD_USDT');assert not b.failures and not b.until
+
+
+def test_public_scanner_health_contains_no_owner_decisions(world):
+    from database.models import record
+    db,u,c,h=world
+    with db.sessions() as s:
+        record(s,None,'research_scan_heartbeat',{'batch':24,'candle_reads':23,'data_errors':1,'backoff':1});s.commit()
+    health=c.get('/health').json()
+    assert health['research_scanner_online']
+    assert health['research_market_reads']=={'batch':24,'candle_reads':23,'data_errors':1,'backoff':1}
+    assert 'decisions' not in health and 'positions' not in health

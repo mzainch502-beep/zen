@@ -68,6 +68,8 @@ async def run_futures_observer(db):
                 held=list(s.scalars(select(FuturesPaperPosition.symbol)))+pending_symbols(s)
                 batch,cursor=rotation(list(s.scalars(select(FuturesMarket))),cursor,24,held,backoff.blocked(time.monotonic()))
             rows=await asyncio.gather(*(candles(symbol) for symbol in batch))
+            with db.sessions() as s:
+                record(s,None,'research_scan_heartbeat',{'batch':len(batch),'candle_reads':sum(r is not None for _,r in rows),'data_errors':sum(r is None for _,r in rows),'backoff':len(backoff.blocked(time.monotonic()))});s.commit()
             for u in owners:
                 scanned=0;failed=0;fills=0;vetoes=0
                 for symbol,completed in rows:
