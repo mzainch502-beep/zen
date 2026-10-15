@@ -86,6 +86,19 @@ class Database:
     def create_dev(self): Base.metadata.create_all(self.engine)
 
 def record(db,user_id,kind,payload):
+    # Operational liveness is current state, not financial history. Keep one
+    # atomic row per source/owner instead of appending every five seconds.
+    if kind in {'worker_heartbeat','executor_heartbeat','futures_observer_heartbeat','research_scan_heartbeat','scan_summary'}:
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+        dialect=db.get_bind().dialect.name
+        if dialect in {'postgresql','sqlite'}:
+            insert=pg_insert if dialect=='postgresql' else sqlite_insert
+            values=dict(id=str(uuid.uuid5(uuid.NAMESPACE_URL,f'zen:status:{user_id}:{kind}')),
+                        user_id=user_id,kind=kind,payload={'schema_version':1,**payload},created=time.time())
+            stmt=insert(Record).values(**values)
+            db.execute(stmt.on_conflict_do_update(index_elements=['id'],set_={'payload':stmt.excluded.payload,'created':stmt.excluded.created}))
+            return
     db.add(Record(user_id=user_id,kind=kind,payload={'schema_version':1,**payload}))
 
 class FuturesConfig(Base):

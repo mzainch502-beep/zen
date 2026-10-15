@@ -139,4 +139,6 @@ async def run():
                 finally:await a.close()
             with db.sessions() as s:record(s,None,'executor_heartbeat',{'live_connections':len(connections)});s.commit()
             await asyncio.sleep(5)
-if __name__=='__main__':asyncio.run(run())
+if __name__=='__main__':
+    from backend.supervisor import supervise
+    asyncio.run(supervise(run))

@@ -188,4 +188,6 @@ async def run():
             await adapter.close()
             futures_task.cancel();context_task.cancel()
             await asyncio.gather(futures_task,context_task,return_exceptions=True)
-if __name__=='__main__': asyncio.run(run())
+if __name__=='__main__':
+    from backend.supervisor import supervise
+    asyncio.run(supervise(run))
