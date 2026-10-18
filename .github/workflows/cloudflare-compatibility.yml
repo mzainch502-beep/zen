@@ -55,6 +55,14 @@ jobs:
             sleep 2
           done
           python tests/check_app.py
+      - name: Package verified deployment source
+        working-directory: cloudflare
+        run: uv run pywrangler deploy --dry-run --config wrangler-app.jsonc --outdir /tmp/zen-app-bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-backend-bundle
+          path: /tmp/zen-app-bundle
+          retention-days: 7
       - name: Save compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4

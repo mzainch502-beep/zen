@@ -1,8 +1,7 @@
 """Adapt synchronous FastAPI handlers to Workers' single-thread Python runtime."""
 import inspect
 from functools import wraps
-from fastapi.routing import APIRoute
-from starlette.routing import request_response
+from fastapi.routing import APIRoute, request_response
 
 def asynchronous(function):
     if inspect.iscoroutinefunction(function) or inspect.isasyncgenfunction(function):
