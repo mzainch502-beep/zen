@@ -21,14 +21,14 @@ token=call('/auth/login','POST',{'email':'runtime@test.invalid','password':'ci-p
 checks.append('owner login and authorization')
 call('/fixturequotes','POST',{})
 assert Decimal(call('/snapshot')['portfolio']['equity'])==Decimal('3')
-proposal={'symbol':'BTC_USDT','direction':'SHORT','margin':'1','leverage':10,'stop':'102','take_profit':'96','idempotency_key':'cf-paper-fixture-0001'}
+proposal={'symbol':'BTC_USDT','direction':'SHORT','margin':'1','leverage':10,'stop':'102','take_profit':'96','idempotency_key':uuid.uuid4().hex}
 position=call('/futures/paper/orders','POST',proposal)['position_id']
 assert call('/futures/paper/orders','POST',proposal)['position_id']==position
 call('/futures/paper/orders','POST',{**proposal,'margin':'2'},expected=409)
 checks.append('paper SHORT and duplicate prevention')
 call('/agent/mode','POST',{'mode':'Emergency Stop'})
-call('/futures/paper/orders','POST',{**proposal,'idempotency_key':'cf-paper-fixture-0002'},expected=409)
-call('/futures/positions/'+position+'/close','POST',{'fraction':'1','idempotency_key':'cf-close-fixture-0001'})
+call('/futures/paper/orders','POST',{**proposal,'idempotency_key':uuid.uuid4().hex},expected=409)
+call('/futures/positions/'+position+'/close','POST',{'fraction':'1','idempotency_key':uuid.uuid4().hex})
 assert call('/snapshot')['positions']==[]
 checks.append('emergency stop with reducing exits permitted')
 call('/auth/logout','POST',{})
