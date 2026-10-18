@@ -9,6 +9,6 @@ first, second = read(), read()
 print(json.dumps({'first': first, 'second': second}, indent=2))
 for result in (first, second):
     assert result['migration_complete'] is False
-    for name in ('transaction_rollback', 'argon2', 'vault'):
+    for name in ('transaction_rollback', 'argon2', 'vault', 'orm_rollback', 'orm_savepoint'):
         assert result['checks'][name] is True, f'Compatibility failed: {name}'
 assert second['checks']['persistent_counter'] == first['checks']['persistent_counter'] + 1

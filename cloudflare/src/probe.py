@@ -13,6 +13,30 @@ class Probe(DurableObject):
 
     async def fetch(self, request):
         checks = {}
+        import do_dbapi
+        from sqlalchemy import create_engine, text
+        from sqlalchemy.pool import StaticPool
+        engine = create_engine('sqlite://', module=do_dbapi,
+            creator=lambda: do_dbapi.Connection(self.ctx.storage), poolclass=StaticPool)
+        with engine.connect() as conn:
+            conn.execute(text('CREATE TABLE IF NOT EXISTS bridge_checks(id INTEGER PRIMARY KEY, value TEXT)'))
+            conn.commit()
+            conn.execute(text("INSERT INTO bridge_checks VALUES(1,'original') ON CONFLICT(id) DO UPDATE SET value='original'"))
+            conn.commit()
+            conn.execute(text("UPDATE bridge_checks SET value='wrong' WHERE id=1"))
+            conn.rollback()
+            checks['orm_rollback'] = conn.scalar(text('SELECT value FROM bridge_checks WHERE id=1')) == 'original'
+            conn.commit()
+            with conn.begin():
+                conn.execute(text("UPDATE bridge_checks SET value='outer' WHERE id=1"))
+                try:
+                    with conn.begin_nested():
+                        conn.execute(text("UPDATE bridge_checks SET value='inner' WHERE id=1"))
+                        raise ValueError('intentional')
+                except ValueError:
+                    pass
+                checks['orm_savepoint'] = conn.scalar(text('SELECT value FROM bridge_checks WHERE id=1')) == 'outer'
+        engine.dispose()
         def increment():
             self.ctx.storage.sql.exec('INSERT INTO checks VALUES(1,1) ON CONFLICT(id) DO UPDATE SET n=n+1')
         self.ctx.storage.transactionSync(increment)
