@@ -1,6 +1,9 @@
 name: Deploy Cloudflare backend (inactive until migration)
 on:
   workflow_dispatch:
+  push:
+    branches: [cloudflare-migration]
+    paths: ['.github/workflows/deploy-cloudflare.yml']
 permissions:
   contents: read
 concurrency:
