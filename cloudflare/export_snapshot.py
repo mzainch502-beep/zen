@@ -56,7 +56,7 @@ def run():
                 batch=0;chain='0'*64
                 def write(table,rows):
                     nonlocal batch,chain
-                    digest=hashlib.sha256(canonical(rows)).hexdigest()
+                    digest=hashlib.sha256(canonical({'table':table,'rows':rows})).hexdigest()
                     send('/migration/chunk',{'id':migration_id,'batch':batch,'table':table,'rows':rows})
                     chain=hashlib.sha256((chain+table+digest).encode()).hexdigest()
                     batch+=1

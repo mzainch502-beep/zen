@@ -37,7 +37,7 @@ class Migration:
         if not state or body.get('id')!=state['id']:
             return Response.json({'detail':'Migration not initialized'},status=409)
         if path=='/migration/chunk':
-            index=body['batch']; digest=hashlib.sha256(canonical(body['rows'])).hexdigest()
+            index=body['batch']; digest=hashlib.sha256(canonical({'table':body['table'],'rows':body['rows']})).hexdigest()
             prior=await self.storage.get('migration_batch:'+str(index))
             if prior:
                 if prior!=digest: return Response.json({'detail':'Batch content conflict'},status=409)

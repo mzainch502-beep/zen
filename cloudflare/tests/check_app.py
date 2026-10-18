@@ -35,3 +35,26 @@ call('/auth/logout','POST',{})
 call('/snapshot',expected=401)
 checks.append('session revocation')
 print(json.dumps({'runtime':'Cloudflare workerd','market_data':'test fixtures only','passed':checks},indent=2))
+
+# Separate Durable Object: verify authenticated ledger import and replay checks.
+import hashlib
+base += '/importcheck'
+token=''
+manifest=call('/fixturemanifest')
+counts={name:0 for name in manifest['tables']};counts['users']=1
+mid=uuid.uuid4().hex
+call('/migration/begin','POST',{'id':mid,'tables':counts},expected=401)
+token='ci-migration-fixture-not-a-production-secret'
+call('/migration/begin','POST',{'id':mid,'tables':counts})
+call('/migration/activate','POST',{'id':mid,'source_execution_stopped':True},expected=409)
+rows=[{'id':str(uuid.uuid4()),'email':'import@test.invalid','password':'not-a-login-hash',
+       'cash':'123.123456789123','initial_equity':'200','high_water':'200','mode':'Paused','limits':{},'created':1.0}]
+batch={'id':mid,'batch':0,'table':'users','rows':rows}
+reply=call('/migration/chunk','POST',batch)
+assert call('/migration/chunk','POST',batch)['replayed']
+call('/migration/chunk','POST',{**batch,'table':'audit_events'},expected=409)
+call('/migration/finish','POST',{'id':mid,'chain':'wrong'},expected=409)
+assert call('/migration/finish','POST',{'id':mid,'chain':reply['chain']})['verified']
+assert call('/fixturemanifest')['cash']=='123.123456789123'
+call('/migration/activate','POST',{'id':mid,'source_execution_stopped':False},expected=409)
+print('PASS: authenticated import, exact decimals, replay conflict, hash verification and activation guard')

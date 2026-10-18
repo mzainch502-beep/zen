@@ -2,11 +2,21 @@
 import time
 from decimal import Decimal
 from urllib.parse import urlparse
-from workers import Response
-from entry import Default, ZenEngine
+from workers import Response, WorkerEntrypoint, Request
+from entry import ZenEngine
 
 class AppProbe(ZenEngine):
     async def fetch(self, request):
+        if urlparse(request.url).path=='/fixturemanifest':
+            async def manifest():
+                self.initialize()
+                from sqlalchemy import select
+                from database.models import User
+                with self.database.sessions() as session:
+                    user=session.scalar(select(User))
+                    cash=str(user.cash) if user else None
+                return Response.json({'tables':list(self.migration.tables),'cash':cash})
+            return await self.ctx.blockConcurrencyWhile(manifest)
         if urlparse(request.url).path=='/fixturequotes':
             async def fixture():
                 self.initialize()
@@ -24,3 +34,13 @@ class AppProbe(ZenEngine):
                 return Response.json({'fixture':True})
             return await self.ctx.blockConcurrencyWhile(fixture)
         return await super().fetch(request)
+
+class Default(WorkerEntrypoint):
+    async def fetch(self, request):
+        path=urlparse(request.url).path
+        if path.startswith('/importcheck/'):
+            target=self.env.ENGINE.getByName('import-fixture')
+            rewritten=request.url.replace('/importcheck/', '/', 1)
+            return await target.fetch(Request(rewritten, method=request.method,
+                headers=dict(request.headers.items()), body=await request.bytes() if request.method=='POST' else None))
+        return await self.env.ENGINE.getByName('zen-primary').fetch(request)

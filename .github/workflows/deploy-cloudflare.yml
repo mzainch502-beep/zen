@@ -1,0 +1,44 @@
+name: Deploy Cloudflare backend (inactive until migration)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: zen-cloudflare-deployment
+  cancel-in-progress: false
+jobs:
+  compatibility:
+    uses: ./.github/workflows/cloudflare-compatibility.yml
+  deploy:
+    needs: compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@v6
+      - name: Check deployment credential
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo 'Add the scoped CLOUDFLARE_API_TOKEN GitHub Actions secret. Do not paste it in logs.'
+            exit 1
+          fi
+      - name: Build and deploy the validated source revision
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: '65055dbadf321f878709a766e1fd65db'
+        run: |
+          uv run pywrangler sync
+          python prepare_vendor.py
+          python stage.py
+          uv run pywrangler deploy --config wrangler-app.jsonc
+      - name: Record deployment boundary
+        run: |
+          echo 'Backend deployed; account import, source shutdown and authenticated activation are separate steps.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This workflow does not activate trading or migrate account data.' >> "$GITHUB_STEP_SUMMARY"

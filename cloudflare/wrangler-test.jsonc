@@ -1,9 +1,29 @@
 {
-  "name":"zen-app-compatibility",
-  "main":"src/ci_probe.py",
-  "compatibility_date":"2026-10-18",
-  "compatibility_flags":["python_workers"],
-  "durable_objects":{"bindings":[{"name":"ENGINE","class_name":"AppProbe"}]},
-  "migrations":[{"tag":"v1","new_sqlite_classes":["AppProbe"]}],
-  "vars":{"LOCAL_COMPATIBILITY_TEST":"true","BOOTSTRAP_TOKEN":"ci-bootstrap-fixture-not-a-production-secret"}
+  "name": "zen-app-compatibility",
+  "main": "src/ci_probe.py",
+  "compatibility_date": "2026-10-18",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ENGINE",
+        "class_name": "AppProbe"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "AppProbe"
+      ]
+    }
+  ],
+  "vars": {
+    "LOCAL_COMPATIBILITY_TEST": "true",
+    "BOOTSTRAP_TOKEN": "ci-bootstrap-fixture-not-a-production-secret",
+    "MIGRATION_TOKEN": "ci-migration-fixture-not-a-production-secret"
+  }
 }
