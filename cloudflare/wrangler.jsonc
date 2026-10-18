@@ -1,0 +1,24 @@
+{
+  "name": "zen-runtime-probe",
+  "main": "src/probe.py",
+  "compatibility_date": "2026-10-18",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PROBE",
+        "class_name": "Probe"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Probe"
+      ]
+    }
+  ]
+}

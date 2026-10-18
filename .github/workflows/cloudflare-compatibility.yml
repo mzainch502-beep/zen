@@ -1,0 +1,50 @@
+name: Cloudflare runtime compatibility
+on:
+  push:
+    branches: [cloudflare-migration]
+    paths: ['cloudflare/**', '.github/workflows/cloudflare-compatibility.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@v6
+      - name: Build Python Worker dependencies
+        working-directory: cloudflare
+        run: uv run pywrangler deploy --dry-run --outdir /tmp/zen-worker-bundle
+      - name: Verify transactions, authentication, vault and persistence
+        working-directory: cloudflare
+        run: |
+          uv run pywrangler dev --port 8799 > /tmp/zen-runtime.log 2>&1 &
+          runtime_pid=$!
+          trap 'kill "$runtime_pid" || true' EXIT
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --silent --max-time 5 http://127.0.0.1:8799/ > /tmp/zen-ready.json; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$runtime_pid" 2>/dev/null; then
+              cat /tmp/zen-runtime.log
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then cat /tmp/zen-runtime.log; exit 1; fi
+          python tests/check_runtime.py
+      - name: Save compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-runtime-evidence
+          path: |
+            /tmp/zen-runtime.log
+            /tmp/zen-ready.json
+          retention-days: 7
