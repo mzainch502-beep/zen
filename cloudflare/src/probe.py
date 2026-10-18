@@ -13,11 +13,18 @@ class Probe(DurableObject):
 
     async def fetch(self, request):
         checks = {}
+        import sqlite3
+        cache = sqlite3.connect(':memory:')
+        cache.execute('CREATE TABLE ephemeral_quotes(symbol TEXT PRIMARY KEY, price TEXT)')
+        cache.execute("INSERT INTO ephemeral_quotes VALUES('TEST', '0.123456789123')")
+        checks['ephemeral_quotes'] = cache.execute('SELECT price FROM ephemeral_quotes').fetchone()[0] == '0.123456789123'
+        cache.close()
         import do_dbapi
         from sqlalchemy import create_engine, text
         from sqlalchemy.pool import StaticPool
         engine = create_engine('sqlite://', module=do_dbapi,
             creator=lambda: do_dbapi.Connection(self.ctx.storage), poolclass=StaticPool)
+        engine.dialect.get_isolation_level = lambda connection: 'SERIALIZABLE'
         with engine.connect() as conn:
             conn.execute(text('CREATE TABLE IF NOT EXISTS bridge_checks(id INTEGER PRIMARY KEY, value TEXT)'))
             conn.commit()
