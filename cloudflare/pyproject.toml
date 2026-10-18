@@ -2,6 +2,9 @@
 name = "zen-cloudflare"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = ["fastapi", "sqlalchemy", "pydantic", "argon2-cffi", "cryptography", "httpx"]
+dependencies = ["fastapi", "sqlalchemy", "pydantic", "argon2-cffi", "cryptography", "httpx", "ccxt==4.4.100", "defusedxml==0.7.1", "websockets==16.0"]
 [dependency-groups]
 dev = ["workers-py", "workers-runtime-sdk"]
+
+[tool.uv]
+override-dependencies = ["aiodns; sys_platform != 'emscripten'"]

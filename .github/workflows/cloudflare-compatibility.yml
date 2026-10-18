@@ -18,7 +18,11 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Build Python Worker dependencies
         working-directory: cloudflare
-        run: uv run pywrangler deploy --dry-run --outdir /tmp/zen-worker-bundle
+        run: |
+          uv run pywrangler sync
+          python prepare_vendor.py
+          python stage.py
+          uv run pywrangler deploy --dry-run --outdir /tmp/zen-worker-bundle
       - name: Verify transactions, authentication, vault and persistence
         working-directory: cloudflare
         run: |
@@ -39,6 +43,18 @@ jobs:
           done
           if [ "$ready" != true ]; then cat /tmp/zen-runtime.log; exit 1; fi
           python tests/check_runtime.py
+      - name: Verify existing API and paper execution on Cloudflare
+        working-directory: cloudflare
+        run: |
+          uv run pywrangler dev --config wrangler-test.jsonc --port 8800 > /tmp/zen-app-runtime.log 2>&1 &
+          runtime_pid=$!
+          trap 'cat /tmp/zen-app-runtime.log; kill "$runtime_pid" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --max-time 5 http://127.0.0.1:8800/health > /dev/null; then break; fi
+            if ! kill -0 "$runtime_pid" 2>/dev/null; then exit 1; fi
+            sleep 2
+          done
+          python tests/check_app.py
       - name: Save compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -46,5 +62,6 @@ jobs:
           name: cloudflare-runtime-evidence
           path: |
             /tmp/zen-runtime.log
+            /tmp/zen-app-runtime.log
             /tmp/zen-ready.json
           retention-days: 7

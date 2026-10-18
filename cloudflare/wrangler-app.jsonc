@@ -1,0 +1,11 @@
+{
+  "name": "zen-api",
+  "main": "src/entry.py",
+  "compatibility_date": "2026-10-18",
+  "compatibility_flags": ["python_workers"],
+  "durable_objects": {"bindings": [{"name": "ENGINE", "class_name": "ZenEngine"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["ZenEngine"]}],
+  "triggers": {"crons": ["* * * * *"]},
+  "vars": {"SCAN_INTERVAL_SECONDS": "60", "SCAN_BATCH_SIZE": "4"},
+  "observability": {"enabled": true, "logs": {"enabled": true, "invocation_logs": false}}
+}

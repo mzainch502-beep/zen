@@ -138,7 +138,7 @@ class Cursor:
             names = list(result.columnNames)
             self.description = [(x, None, None, None, None, None, None) for x in names]
             self.rows = [tuple(row) for row in result.raw().toArray()]
-            self.rowcount = int(result.rowsWritten)
+            self.rowcount = int(conn.storage.sql.exec('SELECT changes() AS affected').one().affected) if upper.startswith(('INSERT', 'UPDATE', 'DELETE')) else -1
             self.offset = 0
             return self
         except Exception as error:
