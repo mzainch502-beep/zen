@@ -137,7 +137,7 @@ class Cursor:
             result = conn.storage.sql.exec(sql, *parameters)
             names = list(result.columnNames)
             self.description = [(x, None, None, None, None, None, None) for x in names]
-            self.rows = [tuple(row) for row in result.raw().toArray().to_py()]
+            self.rows = [tuple(row) for row in result.raw().toArray()]
             self.rowcount = int(result.rowsWritten)
             self.offset = 0
             return self
