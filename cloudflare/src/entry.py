@@ -75,7 +75,7 @@ class Default(WorkerEntrypoint):
         return await self.env.ENGINE.getByName('zen-primary').fetch(request)
 
     async def scheduled(self, controller, env, ctx):
-        response=await env.ENGINE.getByName('zen-primary').fetch(Request('https://internal/_wake',method='POST'))
+        response=await self.env.ENGINE.getByName('zen-primary').fetch(Request('https://internal/_wake',method='POST'))
         if response.status != 200:
             raise RuntimeError('Scheduler wake failed')
         state=await response.json()
