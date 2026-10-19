@@ -1,4 +1,4 @@
-"""Cloudflare entry point. Inactive until an authenticated, verified cutover."""
+"""Cloudflare entry point. Explicit fresh-paper activation or verified import."""
 import asyncio, os, time
 from urllib.parse import urlparse
 from workers import WorkerEntrypoint, DurableObject, Response, Request, asgi

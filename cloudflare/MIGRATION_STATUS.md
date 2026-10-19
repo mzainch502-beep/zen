@@ -1,49 +1,63 @@
-# Cloudflare migration status
+# Cloudflare fresh paper deployment
 
-This branch is a candidate port, not a completed Railway replacement.
+The owner requested a fresh workspace on 19 October 2026; Railway account data is
+not imported or deleted. Android 0.9.0 (version code 12) uses
+`https://zen-api.zen-fatishorizon.workers.dev`.
 
-## Verified on 18 October 2026
+## New owner setup
 
-GitHub Actions run 39151213234 passed the actual Cloudflare workerd runtime checks:
-Argon2 authentication, AES-GCM credential encryption, persistent storage, SQLAlchemy
-transactions and nested rollback, owner login, paper SHORT execution, duplicate
-prevention, emergency stop with reducing exits, and session revocation.
-All market prices in these tests are fixtures. This is not evidence of live exchange execution.
-Backend validation run 39151213240 also passed.
+Choose **Create account** in the APK, enter an email, a password of at least 12
+characters, and the private one-use owner setup code. The code is a Cloudflare
+secret, never part of the APK or repository. Setup closes after the first owner.
+Remove `BOOTSTRAP_TOKEN` from Worker secrets after successful setup.
 
-The remote `zen-migration-check` Worker verifies Cloudflare durable storage only.
-It is not the app backend. The installed Android app still uses Railway.
+`ZEN_PAPER_PROFILE=aggressive` provisions exactly $200 simulated capital:
+$50 spot and $150 futures. It enables combined automatic paper trading with a
+5x maximum futures leverage, $3 margin per proposed position, up to three futures
+positions, $2 maximum trade loss, $6 daily loss ceiling, and $20 drawdown ceiling.
+Aggregate portfolio checks still apply. These are ceilings, not trade guarantees.
+An existing account's cash, limits and history are never reset by a deployment.
+Live autonomous execution remains unavailable on this runtime.
 
-## Deployment access
+## Background work
 
-Use the Cloudflare account belonging to fatishorizon@gmail.com. Create a token
-using the **Edit Cloudflare Workers** template, restricted to that account.
-Save it in the repository's Actions secrets as `CLOUDFLARE_API_TOKEN`.
-Never paste it into chat, source, logs or screenshots. Revoke it after migration
-if ongoing deployment is not needed.
+Durable Object alarms refresh public quotes and manage paper exits independently
+of Android. The next alarm is armed before each cycle (10 seconds); a one-minute
+Cron invocation restores a missing alarm. Network reads run concurrently with
+8-second timeouts, and the overall cycle has a 22-second timeout. Financial
+transactions remain serialized. Long cycles can delay the next alarm.
 
-Run `deploy-cloudflare.yml` from this branch. It depends on the compatibility
-suite and leaves a new backend inactive. It does not transfer data or activate
-execution. The connector cannot create this API token, and its external fetch
-capability rejected the packaged artifact URL.
+A dynamic MEXC contract catalogue and bulk ticker feed cover supported perpetuals;
+liquidity, spread, freshness and exchange API availability filter eligibility.
+Four contracts receive candle research per minute, prioritizing held positions,
+volatility and a rotating catalogue. The rotation cursor survives eviction. Spot
+research uses BTC, ETH and SOL on alternating cycles. No fixed trade count or
+profit quota forces an order. Exit and risk checks can leave the account in cash.
 
-## Required before cutover
+## Validation and limitations
 
-1. Validate the deployed Python Worker and public exchange access.
-2. Validate the import tests, restart recovery and background alarm behavior.
-3. Complete context polling, event-stream compatibility and execution parity.
-   The candidate currently supports the paper flow; the live executor is not ported.
-4. Measure storage writes and CPU against the account plan. Free tier quotas
-   can stop operations; do not treat free hosting as guaranteed uninterrupted service.
-   No paid plan has been authorized or enabled by this migration.
-5. Stop source execution and freeze source API mutations. Retain a verified backup.
-6. Provision fresh target vault and migration secrets securely, export a consistent
-   PostgreSQL snapshot, verify table counts and chained batch hashes, then activate.
-7. Update Android's backend URL, build/install and verify the APK.
-8. Retire Railway only after the target and account data have been verified.
+The deployment workflow gates publishing on actual workerd tests for authentication,
+exact financial decimals, database transactions/rollback, credential encryption,
+fresh capital allocation, paper SHORT orders, duplicate prevention, emergency stop,
+and session revocation. Test prices are explicitly fixtures, not performance data.
+Android workflows compile, lint, and run navigation instrumentation tests.
 
-`export_snapshot.py` preserves account records and reencrypts exchange credentials
-for the destination. HTTP batch retries are idempotent. Restarting the exporter
-with a new process is not yet supported when credential re-encryption changes a
-batch: retain the consistent export or implement encrypted checkpointing first.
-Never clear trading history or reset losses to make a migration pass.
+Public exchange access and background execution must also be checked using deployed
+Worker logs and durable heartbeat records. Passing fixture tests does not establish
+profitable performance, live execution readiness, or continuous uptime.
+
+Cloudflare free-tier CPU, request and database quotas can stop service. No paid plan
+was enabled. Observe actual usage before treating this as production infrastructure.
+Portfolio snapshots are spaced at five minutes to reduce writes. Runtime quote
+caches are volatile and refresh after eviction; stale quotes cannot authorize entry.
+Android uses authenticated HTTP polling; `/events` WebSocket is unavailable here.
+The Railway privileged live executor and geopolitical context poller are not ported.
+This is a paper-testing release, not a public fund-management launch.
+
+## Deployment
+
+Use the Cloudflare account for fatishorizon@gmail.com. GitHub secret
+`CLOUDFLARE_API_TOKEN` authorizes the existing deployment workflow. Worker secrets
+`CREDENTIAL_MASTER_KEY` and `BOOTSTRAP_TOKEN` are provisioned separately. Never rotate
+the master key without reencrypting any stored credentials. Keep an owner-controlled
+backup/recovery process before storing real exchange credentials.

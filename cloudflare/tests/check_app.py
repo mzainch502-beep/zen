@@ -1,5 +1,5 @@
 """Actual HTTP calls to workerd; all market prices here are test fixtures."""
-import json, urllib.request, urllib.error, uuid
+import json, time, urllib.request, urllib.error, uuid
 from decimal import Decimal
 base='http://127.0.0.1:8800'
 token=''
@@ -17,7 +17,11 @@ def call(path,method='GET',body=None,expected=200,authenticated=True):
 assert call('/health')['status']=='ok'
 with urllib.request.urlopen(base+'/cdn-cgi/local/scheduled',timeout=90) as response:
     assert response.status==200
-checks.append('production scheduled handler invocation')
+for _ in range(20):
+    if call('/fixturemanifest').get('alarm_ran'): break
+    time.sleep(.5)
+else: raise AssertionError('Fresh activation did not start production alarm handler')
+checks.append('production scheduled handler, fresh activation and alarm invocation')
 call('/snapshot',expected=401,authenticated=False)
 call('/auth/setup','POST',{'email':'runtime@test.invalid','password':'ci-password-long-enough','setup_token':'ci-bootstrap-fixture-not-a-production-secret'})
 token=call('/auth/login','POST',{'email':'runtime@test.invalid','password':'ci-password-long-enough'})['token']

@@ -11,7 +11,13 @@ if (root/'async_support'/'gate.py').exists():names.append('gate')
 license_text=(root/'__init__.py').read_text().split('__version__')[0]
 core="__version__ = '4.4.100'\nfrom ccxt.base.errors import *\nfrom ccxt.base.precise import Precise\nfrom ccxt.base.decimal_to_precision import *\n"
 (root/'__init__.py').write_text(license_text+core+'from ccxt.base.exchange import Exchange\n')
-(root/'async_support'/'__init__.py').write_text(license_text+core+'from ccxt.async_support.base.exchange import Exchange\n'+''.join(f'from ccxt.async_support.{n} import {n}\n' for n in names)+f'exchanges = {names!r}\n')
+(root/'async_support'/'__init__.py').write_text(license_text+core+'from ccxt.async_support.base.exchange import Exchange\n'+f'exchanges = {names!r}\n'+'''def __getattr__(name):
+    if name not in exchanges: raise AttributeError(name)
+    from importlib import import_module
+    value = getattr(import_module('ccxt.async_support.'+name),name)
+    globals()[name]=value
+    return value
+''')
 for folder in (root, root/'async_support', root/'abstract'):
     for file in folder.glob('*.py'):
         if file.name=='__init__.py':continue

@@ -1,4 +1,4 @@
-name: Deploy Cloudflare backend (inactive until migration)
+name: Deploy Cloudflare paper backend
 on:
   workflow_dispatch:
   push:

@@ -6,6 +6,19 @@ from workers import Response, WorkerEntrypoint, Request
 from entry import Default as ProductionDefault, ZenEngine
 
 class AppProbe(ZenEngine):
+    async def alarm(self):
+        # Exercise production alarm scheduling and persistence without real quotes.
+        self.initialize()
+        original=self.observer
+        class FixtureObserver:
+            cursor=0
+            async def tick(inner):
+                await self.ctx.storage.put('fixture_alarm_ran',True)
+                return {'scanned':False,'fixture':True}
+        self.observer=FixtureObserver()
+        try: await super().alarm()
+        finally: self.observer=original
+
     async def fetch(self, request):
         if urlparse(request.url).path=='/fixturemanifest':
             async def manifest():
@@ -15,7 +28,7 @@ class AppProbe(ZenEngine):
                 with self.database.sessions() as session:
                     user=session.scalar(select(User))
                     cash=str(user.cash) if user else None
-                return Response.json({'tables':list(self.migration.tables),'cash':cash})
+                return Response.json({'tables':list(self.migration.tables),'cash':cash,'alarm_ran':bool(await self.ctx.storage.get('fixture_alarm_ran'))})
             return await self.ctx.blockConcurrencyWhile(manifest)
         if urlparse(request.url).path=='/fixturequotes':
             async def fixture():
