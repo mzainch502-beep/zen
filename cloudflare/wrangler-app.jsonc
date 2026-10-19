@@ -5,6 +5,7 @@
   "compatibility_flags": ["python_workers"],
   "durable_objects": {"bindings": [{"name": "ENGINE", "class_name": "ZenEngine"}]},
   "migrations": [{"tag": "v1", "new_sqlite_classes": ["ZenEngine"]}],
+  "services": [{"binding":"MARKET_FEED","service":"zen-market-feed"}],
   "triggers": {"crons": ["* * * * *"]},
   "vars": {"FRESH_WORKSPACE": "true", "ZEN_PAPER_PROFILE": "aggressive", "SCAN_INTERVAL_SECONDS": "60", "SCAN_BATCH_SIZE": "4"},
   "observability": {"enabled": true, "logs": {"enabled": true, "invocation_logs": false}}

@@ -40,8 +40,9 @@ jobs:
           uv run pywrangler sync
           python prepare_vendor.py
           python stage.py
+          npx --yes wrangler@4 deploy --config wrangler-feed.jsonc
           uv run pywrangler deploy --config wrangler-app.jsonc
       - name: Record deployment boundary
         run: |
-          echo 'Backend deployed; account import, source shutdown and authenticated activation are separate steps.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'This workflow does not activate trading or migrate account data.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Fresh paper backend deployed; owner setup is required before paper orders.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No account data is migrated. Live execution remains disabled.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,4 +1,4 @@
-"""Cloudflare entry point. Explicit fresh-paper activation or verified import."""
+"""Cloudflare entry point. Fresh paper backend with an isolated compact public market feed."""
 import asyncio, os, time
 from urllib.parse import urlparse
 from workers import WorkerEntrypoint, DurableObject, Response, Request, asgi

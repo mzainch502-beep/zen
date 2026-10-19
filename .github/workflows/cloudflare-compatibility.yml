@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Verify compact public market feed
+        run: node --experimental-default-type=module cloudflare/tests/check_feed.mjs
       - uses: astral-sh/setup-uv@v6
       - name: Build Python Worker dependencies
         working-directory: cloudflare
