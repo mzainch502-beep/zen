@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [cloudflare-migration]
-    paths: ['.github/workflows/deploy-cloudflare.yml', 'cloudflare/src/entry.py']
+    paths: ['.github/workflows/deploy-cloudflare.yml', '.github/workflows/cloudflare-compatibility.yml', 'cloudflare/**', 'backend/**', 'agents/**', 'exchange_adapters/**', 'database/**', 'risk/**', 'research/**']
 permissions:
   contents: read
 concurrency:
