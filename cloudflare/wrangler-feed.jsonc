@@ -1,6 +1,6 @@
 {
   "name":"zen-market-feed",
-  "main":"market-feed.js",
+  "main":"market-feed.mjs",
   "compatibility_date":"2026-10-18",
   "workers_dev":false,
   "preview_urls":false,
