@@ -6,12 +6,17 @@ class FetchTransport(httpx.AsyncBaseTransport):
     async def handle_async_request(self, request):
         headers = dict(request.headers)
         headers.pop('host', None)
+        headers.pop('accept-encoding', None)
         try:
             response = await asyncio.wait_for(fetch(str(request.url), method=request.method,
                 headers=headers, body=await request.aread() if request.method not in ('GET','HEAD') else None,
                 redirect='manual'), timeout=10)
             data = await response.bytes()
-            return httpx.Response(response.status, headers=dict(response.headers.items()),
+            # Fetch body readers return decoded bytes. Do not ask HTTPX to
+            # decompress them a second time or retain the encoded body length.
+            decoded_headers = {k:v for k,v in response.headers.items()
+                               if k.lower() not in ('content-encoding','content-length','transfer-encoding')}
+            return httpx.Response(response.status, headers=decoded_headers,
                                   content=data, request=request)
         except asyncio.TimeoutError as error:
             raise httpx.ReadTimeout('Exchange request timed out', request=request) from error

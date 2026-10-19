@@ -45,3 +45,23 @@ The installable Android artifact remains run **39258569979**. A functioning APK
 and passing fixture tests do not resolve exchange access restrictions. An
 exchange/provider-approved data connection is required; no proxy or regional
 restriction bypass is implemented. Railway data has not been imported or deleted.
+
+## Market-feed correction — 19 October 2026
+
+The unavailable MEXC futures feed was traced to an internal JavaScript runtime
+error: Cloudflare rejects fetch redirect mode `error`. Revision
+`5a0e30480332e8fd56c725efbc1ec486f17d363b` uses `manual` and still rejects non-2xx
+responses. The deployed durable heartbeat subsequently reported 649 contracts.
+This supersedes the earlier inference that MEXC access itself was blocked.
+
+Revision `f0b18f17b96ee2da8e6417e59784167884af8b27` replaces the Bitget spot observer
+and Cloudflare spot charts/depth with a native MEXC public reader. Backend CI run
+39303912923 passed 137 tests; deployment/runtime validation is separate. Spot
+quote freshness uses the latest exchange trade timestamp; the REST book has no
+exchange timestamp and depth exposes receipt time separately. Unsupported 3m
+spot candles return an unavailable response instead of invented candles.
+
+No owner was provisioned at verification. Market-data recovery does not establish
+that production paper orders have occurred, that paper returns are profitable,
+or that Binance/Bybit live execution is validated. No new APK is necessary for
+these backend-only corrections; Android 0.9.0 already points to Cloudflare.
