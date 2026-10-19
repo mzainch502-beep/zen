@@ -11,7 +11,7 @@ export default {
     const endpoint = path === '/contracts' ? '/api/v1/contract/detail/country' : '/api/v1/contract/ticker';
     let stage='fetch';
     try {
-      const response = await fetch('https://api.mexc.com'+endpoint, {headers:{Language:'English'},signal:AbortSignal.timeout(6000),redirect:'error'});
+      const response = await fetch('https://api.mexc.com'+endpoint, {headers:{Language:'English'},signal:AbortSignal.timeout(6000),redirect:'manual'});
       if (!response.ok) {
         console.log(JSON.stringify({event:'mexc_public_rejected',endpoint,status:response.status}));
         return Response.json({error:'Public exchange request rejected',upstream_status:response.status}, {status:response.status});

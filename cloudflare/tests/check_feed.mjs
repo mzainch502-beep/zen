@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import feed from '../market-feed.mjs';
 const original=globalThis.fetch;
 try {
-  globalThis.fetch=async()=>Response.json({success:true,code:0,data:[{symbol:'BTC_USDT',contractSize:'.001',maxLeverage:500,apiAllowed:true,unneeded:'large metadata'},{symbol:'BTC_USDC'}]});
+  globalThis.fetch=async(url,options)=>{assert.equal(options.redirect,'manual');return Response.json({success:true,code:0,data:[{symbol:'BTC_USDT',contractSize:'.001',maxLeverage:500,apiAllowed:true,unneeded:'large metadata'},{symbol:'BTC_USDC'}]});};
   let response=await feed.fetch(new Request('https://service/contracts'));
   let body=await response.json();
   assert.deepEqual(body.data,[{symbol:'BTC_USDT',contractSize:'.001',maxLeverage:500,apiAllowed:true}]);
