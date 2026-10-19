@@ -49,6 +49,12 @@ class AlarmWorker:
             return await asyncio.wait_for(awaitable,timeout=8)
         results=await asyncio.gather(bounded(futures_quotes()),
             *(bounded(self.spot.quote(symbol)) for symbol in symbols),return_exceptions=True)
+        for source,result in zip(('futures',*symbols),results):
+            if isinstance(result,BaseException):
+                print({'event':'public_read_failed','source':source,'error_type':type(result).__name__,
+                    'cause_type':type(result.__cause__).__name__ if result.__cause__ else None,
+                    'status':getattr(getattr(result,'response',None),'status_code',None),
+                    'detail':str(result)[:120] if isinstance(result,ValueError) else None})
         if isinstance(results[0],BaseException): errors+=1
         else:
             with db.sessions() as s:
