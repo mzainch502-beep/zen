@@ -31,3 +31,17 @@ A daily profit target is not an execution quota.
 There is no evidence yet of a one-week paper performance record, profitability,
 real-money exchange execution, uninterrupted free-tier operation, or readiness to
 manage public funds. APK testing used the Android emulator, not the owner's phone.
+
+## Production verification update — 19 October 2026, 18:18 UTC
+
+The final deployed revision `64942138c7c6eac32a357c68baaf6aa3d4db5da5`
+passed deployment run **39260913480**. Background heartbeats continue updating.
+Production logs identify HTTP **403** responses for all three Bitget spot reads,
+and the MEXC futures feed remains unavailable. At verification there were zero
+provisioned owners, zero usable market catalogue entries, and no validated
+production paper trades. Do not describe this deployment as trading-ready.
+
+The installable Android artifact remains run **39258569979**. A functioning APK
+and passing fixture tests do not resolve exchange access restrictions. An
+exchange/provider-approved data connection is required; no proxy or regional
+restriction bypass is implemented. Railway data has not been imported or deleted.
