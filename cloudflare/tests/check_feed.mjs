@@ -6,6 +6,9 @@ try {
   let response=await feed.fetch(new Request('https://service/contracts'));
   let body=await response.json();
   assert.deepEqual(body.data,[{symbol:'BTC_USDT',contractSize:'.001',maxLeverage:500,apiAllowed:true}]);
+  globalThis.fetch=async()=>new Response('{"success":true,"code":0,"data":[{"symbol":"BTC_USDT","bid1":123.123456789123456789}]}');
+  body=await (await feed.fetch(new Request('https://service/tickers'))).json();
+  assert.equal(body.data[0].bid1,'123.123456789123456789');
   assert.equal((await feed.fetch(new Request('https://service/private'))).status,404);
   assert.equal((await feed.fetch(new Request('https://service/contracts',{method:'POST'}))).status,404);
   globalThis.fetch=async()=>Response.json({success:false,code:500});
