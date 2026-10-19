@@ -16,6 +16,7 @@ class ZenEngine(DurableObject):
         if self.ready:return
         from transport_runtime import install
         install()
+        os.environ['ZEN_CLOUDFLARE']='true'
         from database_runtime import CloudDatabase
         self.database=CloudDatabase(self.ctx.storage)
         self.database.create_dev()

@@ -1,12 +1,15 @@
 """Read-only adapter. Live order placement is deliberately not exposed in this release."""
 import asyncio, time, os
 from decimal import Decimal
-import ccxt.async_support as ccxt
 from backend.domain import Quote
 EXCHANGES={'binance':'binance','bybit':'bybit','okx':'okx','kraken':'kraken','coinbase':'coinbase',
            'bitget':'bitget','kucoin':'kucoin','gate':'gate','mexc':'mexc'}
 class ReadAdapter:
     def __init__(self,exchange,credentials=None):
+        import ccxt.async_support as ccxt
+        if os.getenv('ZEN_CLOUDFLARE')=='true':
+            from transport_runtime import install_ccxt
+            install_ccxt()
         if exchange not in EXCHANGES: raise ValueError('Unsupported exchange')
         self.name=exchange
         adapter_id=EXCHANGES[exchange]
@@ -40,6 +43,7 @@ class ReadAdapter:
         return await self.client.fetch_ohlcv(symbol,timeframe,limit=limit)
 
 async def bounded_read(call,attempts=3):
+    import ccxt.async_support as ccxt
     for attempt in range(attempts):
         try: return await call()
         except (ccxt.NetworkError,ccxt.RateLimitExceeded):

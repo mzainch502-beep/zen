@@ -28,10 +28,13 @@ def install():
             kwargs['trust_env'] = False
             super().__init__(*args, **kwargs)
     httpx.AsyncClient = FetchClient
+
+def install_ccxt():
     import ccxt.async_support as ccxt
+    if getattr(ccxt.Exchange, "_zen_fetch", False):return
     async def exchange_fetch(self, url, method='GET', headers=None, body=None):
         try:
-            async with FetchClient() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.request(method, url, headers=headers, content=body)
             raw = response.text
             try: parsed = json.loads(raw)
@@ -44,3 +47,4 @@ def install():
         except httpx.TransportError as error:
             raise ccxt.NetworkError('Exchange fetch unavailable') from error
     ccxt.Exchange.fetch = exchange_fetch
+    ccxt.Exchange._zen_fetch = True
