@@ -8,7 +8,7 @@ class PublicFutures(MexcFutures):
         self.feed=getattr(env,'MARKET_FEED',None)
     async def bulk(self,path):
         response=await self.feed.fetch(Request('https://market.internal/'+path))
-        if response.status!=200:raise ExchangeFailure('Public data service unavailable')
+        if response.status!=200:raise ExchangeFailure('MEXC public data service HTTP '+str(response.status))
         payload=await response.json()
         return payload['data']
     async def contracts(self,symbol=None):

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from database.models import (User, Market, FuturesMarket, FuturesPaperPosition,
                              FuturesConfig, Record, record)
 from backend.domain import Quote
-from exchange_adapters.mexc_futures import json_safe
+from exchange_adapters.mexc_futures import json_safe, ExchangeFailure
 from public_futures import PublicFutures
 from exchange_adapters.bitget_public import BitgetPublic
 from exchange_adapters.universe import catalogue, rotation, CandleBackoff
@@ -54,7 +54,7 @@ class AlarmWorker:
                 print({'event':'public_read_failed','source':source,'error_type':type(result).__name__,
                     'cause_type':type(result.__cause__).__name__ if result.__cause__ else None,
                     'status':getattr(getattr(result,'response',None),'status_code',None),
-                    'detail':str(result)[:120] if isinstance(result,ValueError) else None})
+                    'detail':str(result)[:120] if isinstance(result,(ValueError,ExchangeFailure)) else None})
         if isinstance(results[0],BaseException): errors+=1
         else:
             with db.sessions() as s:
