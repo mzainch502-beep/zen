@@ -144,7 +144,11 @@ def create_app(database=None):
             finally:await a.close()
         if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT'] or timeframe not in ['1m','3m','5m','15m','30m','1h','4h','1d']:
             raise HTTPException(422,'Unsupported market/timeframe')
-        a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
+        if os.getenv('ZEN_CLOUDFLARE') == 'true':
+            from exchange_adapters.mexc_public import MexcPublic
+            a=MexcPublic()
+        else:
+            a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         try: return {'symbol':symbol,'timeframe':timeframe,'candles':await a.candles(symbol,timeframe)}
         except Exception: raise HTTPException(503,'Exchange candles unavailable')
         finally: await a.close()
@@ -159,7 +163,11 @@ def create_app(database=None):
             except Exception:raise HTTPException(503,'Futures depth unavailable')
             finally:await a.close()
         if symbol not in ['BTC/USDT','ETH/USDT','SOL/USDT']: raise HTTPException(422,'Unsupported market')
-        a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
+        if os.getenv('ZEN_CLOUDFLARE') == 'true':
+            from exchange_adapters.mexc_public import MexcPublic
+            a=MexcPublic()
+        else:
+            a=ReadAdapter(os.getenv('MARKET_EXCHANGE','bitget'))
         try: return await a.depth(symbol)
         except Exception: raise HTTPException(503,'Order book currently unavailable')
         finally: await a.close()

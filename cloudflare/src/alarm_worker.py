@@ -7,7 +7,7 @@ from database.models import (User, Market, FuturesMarket, FuturesPaperPosition,
 from backend.domain import Quote
 from exchange_adapters.mexc_futures import json_safe, ExchangeFailure
 from public_futures import PublicFutures
-from exchange_adapters.bitget_public import BitgetPublic
+from exchange_adapters.mexc_public import MexcPublic
 from exchange_adapters.universe import catalogue, rotation, CandleBackoff
 from backend.futures_paper import manage as manage_futures
 from backend.shadow import pending_symbols
@@ -30,7 +30,7 @@ class AlarmWorker:
         self.last_snapshot = 0
         self.backoff = CandleBackoff()
         self.futures = PublicFutures(env)
-        self.spot = BitgetPublic()
+        self.spot = MexcPublic()
 
     async def tick(self):
         db = self.database
