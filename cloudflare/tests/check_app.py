@@ -22,6 +22,11 @@ call('/snapshot',expected=401,authenticated=False)
 call('/auth/setup','POST',{'email':'runtime@test.invalid','password':'ci-password-long-enough','setup_token':'ci-bootstrap-fixture-not-a-production-secret'})
 token=call('/auth/login','POST',{'email':'runtime@test.invalid','password':'ci-password-long-enough'})['token']
 checks.append('owner login and authorization')
+assert Decimal(call('/snapshot')['portfolio']['equity'])==Decimal('200')
+settings=call('/futures/settings')
+assert settings['workspace']=='combined' and settings['limits']['automatic']
+assert settings['limits']['max_leverage']==5 and not settings['activated']
+checks.append('fresh combined paper capital is 200 total, aggressive automatic preset, live disabled')
 call('/fixturequotes','POST',{})
 assert Decimal(call('/snapshot')['portfolio']['equity'])==Decimal('3')
 proposal={'symbol':'BTC_USDT','direction':'SHORT','margin':'1','leverage':10,'stop':'102','take_profit':'96','idempotency_key':uuid.uuid4().hex}

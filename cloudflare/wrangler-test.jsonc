@@ -23,6 +23,7 @@
   ],
   "vars": {
     "LOCAL_COMPATIBILITY_TEST": "true",
+    "ZEN_PAPER_PROFILE": "aggressive",
     "BOOTSTRAP_TOKEN": "ci-bootstrap-fixture-not-a-production-secret",
     "MIGRATION_TOKEN": "ci-migration-fixture-not-a-production-secret"
   }

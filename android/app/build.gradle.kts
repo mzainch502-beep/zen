@@ -2,7 +2,7 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id(
 android {
     namespace = "app.zen"
     compileSdk = 35
-    defaultConfig { applicationId = "app.zen.intelligence"; minSdk = 26; targetSdk = 35; versionCode = 11; versionName = "0.8.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"; buildConfigField("String", "BACKEND_URL", "\"https://zen-api-production-8459.up.railway.app\"") }
+    defaultConfig { applicationId = "app.zen.intelligence"; minSdk = 26; targetSdk = 35; versionCode = 12; versionName = "0.9.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"; buildConfigField("String", "BACKEND_URL", "\"https://zen-api.zen-fatishorizon.workers.dev\"") }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }

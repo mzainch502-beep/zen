@@ -1,5 +1,5 @@
 """Cloudflare entry point. Inactive until an authenticated, verified cutover."""
-import os, time
+import asyncio, os, time
 from urllib.parse import urlparse
 from workers import WorkerEntrypoint, DurableObject, Response, Request, asgi
 
@@ -19,7 +19,7 @@ class ZenEngine(DurableObject):
         from database_runtime import CloudDatabase
         self.database=CloudDatabase(self.ctx.storage)
         self.database.create_dev()
-        for key in ('CREDENTIAL_MASTER_KEY','BOOTSTRAP_TOKEN'):
+        for key in ('CREDENTIAL_MASTER_KEY','BOOTSTRAP_TOKEN','ZEN_PAPER_PROFILE'):
             value=getattr(self.env,key,None)
             if value:os.environ[key]=value
         from backend.api import create_app
@@ -38,6 +38,9 @@ class ZenEngine(DurableObject):
             if path.startswith('/migration/'):
                 return await self.migration.handle(request,path)
             active=bool(await self.ctx.storage.get('active'))
+            if not active and getattr(self.env,'FRESH_WORKSPACE','false')=='true':
+                await self.ctx.storage.put('active',True)
+                active=True
             if path=='/_wake':
                 if active and await self.ctx.storage.getAlarm() is None:
                     await self.ctx.storage.setAlarm(int(time.time()*1000)+1000)
@@ -57,10 +60,14 @@ class ZenEngine(DurableObject):
         # Re-arm first: an exception or process eviction must not silently end
         # observation. Duplicate alarms are handled by existing decision IDs.
         if not await self.ctx.storage.get('active'):return
-        await self.ctx.storage.setAlarm(int(time.time()*1000)+5000)
+        await self.ctx.storage.setAlarm(int(time.time()*1000)+10000)
         async def operation():
             self.initialize()
-            await self.observer.tick()
+            self.observer.cursor=int(await self.ctx.storage.get('scan_cursor') or 0)
+            result=await asyncio.wait_for(self.observer.tick(),timeout=22)
+            if result.get('scanned'):
+                await self.ctx.storage.put('scan_cursor',self.observer.cursor)
+                print({'event':'market_scan',**result})
         try:
             await self.ctx.blockConcurrencyWhile(operation)
         except Exception as error:

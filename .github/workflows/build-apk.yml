@@ -1,7 +1,7 @@
 name: Build Android APK
 on:
   push:
-    branches: [main]
+    branches: [main, cloudflare-migration]
     paths: ['android/**', '.github/workflows/build-apk.yml']
   workflow_dispatch:
 permissions:
@@ -35,5 +35,5 @@ jobs:
           gh release create "zen-debug-${GITHUB_RUN_ID}" \
             android/app/build/outputs/apk/debug/app-debug.apk \
             --target "$GITHUB_SHA" \
-            --title "ZEN 0.8.0 debug" \
+            --title "ZEN 0.9.0 Cloudflare debug" \
             --notes "Native Android testing build. Defaults to paper mode. Private MEXC order acceptance is unvalidated; autonomous live strategies remain gated."

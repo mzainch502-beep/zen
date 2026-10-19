@@ -81,7 +81,11 @@ def create_app(database=None):
         try: encoded=password_hash(body.password)
         except ValueError as e: raise HTTPException(422,str(e))
         u=User(email=body.email.strip().lower(),password=encoded,mode='Paper',limits=Limits().model_dump(mode='json'))
-        db.add(u);db.flush();record(db,u.id,'owner_provisioned',{});db.commit()
+        db.add(u);db.flush()
+        if os.getenv('ZEN_PAPER_PROFILE')=='aggressive':
+            from backend.provisioning import fresh_paper_workspace
+            fresh_paper_workspace(db,u)
+        record(db,u.id,'owner_provisioned',{});db.commit()
         return {'created':True,'notice':'Remove BOOTSTRAP_TOKEN from hosting variables now'}
     @app.post('/auth/login')
     def login(body: Login,db=Depends(db_dep)):
