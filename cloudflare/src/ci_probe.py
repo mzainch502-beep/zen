@@ -3,7 +3,7 @@ import time
 from decimal import Decimal
 from urllib.parse import urlparse
 from workers import Response, WorkerEntrypoint, Request
-from entry import ZenEngine
+from entry import Default as ProductionDefault, ZenEngine
 
 class AppProbe(ZenEngine):
     async def fetch(self, request):
@@ -35,7 +35,7 @@ class AppProbe(ZenEngine):
             return await self.ctx.blockConcurrencyWhile(fixture)
         return await super().fetch(request)
 
-class Default(WorkerEntrypoint):
+class Default(ProductionDefault):
     async def fetch(self, request):
         path=urlparse(request.url).path
         if path.startswith('/importcheck/'):
