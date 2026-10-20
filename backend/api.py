@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import FastAPI, Depends, HTTPException, Header, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from pydantic import Field
 from backend.domain import Strict, Limits, Proposal
 from database.models import Database, User, Session, Connection, Order, Record, Market, Position, record
@@ -66,9 +66,10 @@ def create_app(database=None):
         scanner=db.scalar(select(Record).where(Record.kind=='research_scan_heartbeat').order_by(Record.created.desc()).limit(1))
         executor=db.scalar(select(Record).where(Record.kind=='executor_heartbeat').order_by(Record.created.desc()).limit(1))
         from database.models import FuturesMarket
-        futures_markets=list(db.scalars(select(FuturesMarket)))
+        catalogue_count=db.scalar(select(func.count()).select_from(FuturesMarket))
+        futures_markets=list(db.scalars(select(FuturesMarket).order_by(FuturesMarket.symbol).limit(20)))
         public=[{'symbol':m.symbol,'max_leverage':m.contract.get('maxLeverage'),'api_allowed':m.contract.get('apiAllowed'),'fresh':time.time()-m.received<15} for m in futures_markets[:20]]
-        return {'status':'ok','research_scanner_online':bool(scanner and time.time()-scanner.created<180),'research_market_reads':{k:scanner.payload.get(k) for k in ('batch','candle_reads','data_errors','backoff')} if scanner else None,'live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'futures_catalogue_count':len(futures_markets),'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
+        return {'status':'ok','research_scanner_online':bool(scanner and time.time()-scanner.created<180),'research_market_reads':{k:scanner.payload.get(k) for k in ('batch','candle_reads','data_errors','backoff')} if scanner else None,'live_execution':bool(db.scalar(select(User).where(User.mode=='Live').limit(1))),'futures_executor_online':bool(executor and time.time()-executor.created<30),'futures_public_markets':public,'futures_catalogue_count':catalogue_count,'autonomous_paper':True,'worker_version':heartbeat.payload.get('version') if heartbeat else None,'worker_online':bool(heartbeat and time.time()-heartbeat.created<30)}
     @app.post('/auth/setup')
     def setup(body: Setup,db=Depends(db_dep)):
         login_budget()

@@ -1,5 +1,5 @@
 """Cloudflare entry point. Fresh paper backend with an isolated compact public market feed."""
-import asyncio, os, time
+import asyncio, gc, os, time
 from urllib.parse import urlparse
 from workers import WorkerEntrypoint, DurableObject, Response, Request, asgi
 
@@ -55,7 +55,11 @@ class ZenEngine(DurableObject):
             # task retains a database transaction beyond the request boundary.
             body=await response.bytes()
             return Response(body,status=response.status,headers=dict(response.headers.items()))
-        return await self.ctx.blockConcurrencyWhile(operation)
+        gc.collect()
+        try:
+            return await self.ctx.blockConcurrencyWhile(operation)
+        finally:
+            gc.collect()
 
     async def alarm(self):
         # Re-arm first: an exception or process eviction must not silently end
@@ -75,6 +79,8 @@ class ZenEngine(DurableObject):
             # No exception bodies, exchange credentials, or SQL parameters.
             print({'event':'alarm_failed','error_type':type(error).__name__})
             raise
+        finally:
+            gc.collect()
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):

@@ -23,12 +23,12 @@ class CloudDatabase:
             for column in table.columns:
                 if isinstance(column.type, Numeric): column.type = ExactDecimal()
         self.engine = create_engine('sqlite://', module=do_dbapi,
-            creator=lambda: do_dbapi.Connection(storage), poolclass=StaticPool)
+            creator=lambda: do_dbapi.Connection(storage), poolclass=StaticPool, query_cache_size=64)
         # Durable Objects use serializable transactions; SQLite's optional
         # PRAGMA read_uncommitted is not exposed by the storage API.
         self.engine.dialect.get_isolation_level = lambda connection: 'SERIALIZABLE'
         self.engine.dialect.has_table = lambda connection, name, schema=None, **kwargs: connection.exec_driver_sql("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)).first() is not None
-        self.quotes = create_engine('sqlite://', poolclass=StaticPool)
+        self.quotes = create_engine('sqlite://', poolclass=StaticPool, query_cache_size=64)
         self.sessions = sessionmaker(self.engine, expire_on_commit=False,
                                     binds={Market: self.quotes, FuturesMarket: self.quotes})
         self.cache_tables = (Market.__table__, FuturesMarket.__table__)
