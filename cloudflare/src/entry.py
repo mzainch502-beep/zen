@@ -86,7 +86,12 @@ class Default(WorkerEntrypoint):
     async def fetch(self, request):
         if urlparse(request.url).path.startswith('/_'):
             return Response.json({'detail':'Not found'},status=404)
-        return await self.env.ENGINE.getByName('zen-primary').fetch(request)
+        try:
+            return await self.env.ENGINE.getByName('zen-primary').fetch(request)
+        except Exception as error:
+            if 'Exceeded allowed rows' in str(error):
+                return Response.json({'detail':'Backend database allowance exhausted. Paper trading is unavailable until service recovers; repeated retries will not help.'},status=503)
+            raise
 
     async def scheduled(self, controller, env, ctx):
         response=await self.env.ENGINE.getByName('zen-primary').fetch(Request('https://internal/_wake',method='POST'))

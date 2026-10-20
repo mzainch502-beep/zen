@@ -37,3 +37,14 @@ class CloudDatabase:
         from database.models import Base
         Base.metadata.create_all(self.engine, tables=[t for t in Base.metadata.sorted_tables if t not in self.cache_tables])
         Base.metadata.create_all(self.quotes, tables=list(self.cache_tables))
+
+        # Match owner timelines, strategy history and global heartbeat lookups.
+        # Without these, LIMIT queries still scan the growing audit ledger.
+        with self.engine.begin() as connection:
+            for name, columns in (
+                ('ix_cf_audit_owner_created', 'user_id, created'),
+                ('ix_cf_audit_owner_kind_created', 'user_id, kind, created'),
+                ('ix_cf_audit_kind_created', 'kind, created'),
+            ):
+                connection.exec_driver_sql(
+                    f'CREATE INDEX IF NOT EXISTS {name} ON audit_events ({columns})')
