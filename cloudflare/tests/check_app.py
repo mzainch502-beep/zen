@@ -43,11 +43,14 @@ call('/futures/paper/orders','POST',{**proposal,'idempotency_key':uuid.uuid4().h
 call('/futures/positions/'+position+'/close','POST',{'fraction':'1','idempotency_key':uuid.uuid4().hex})
 assert call('/snapshot')['positions']==[]
 checks.append('emergency stop with reducing exits permitted')
+call('/fixturecatalogue','POST',{})
 # Repeated mobile snapshot polling must retain auth and ledger consistency.
 for _ in range(30):
     assert call('/snapshot')['positions']==[]
     assert isinstance(call('/markets'),list)
-    assert call('/health')['futures_catalogue_count']>=1
+    health=call('/health')
+    assert health['futures_catalogue_count']==651
+    assert len(health['futures_public_markets'])==20
 checks.append('30 repeated snapshot/markets/health refresh cycles')
 call('/auth/logout','POST',{})
 call('/snapshot',expected=401)

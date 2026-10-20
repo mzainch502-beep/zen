@@ -30,6 +30,18 @@ class AppProbe(ZenEngine):
                     cash=str(user.cash) if user else None
                 return Response.json({'tables':list(self.migration.tables),'cash':cash,'alarm_ran':bool(await self.ctx.storage.get('fixture_alarm_ran'))})
             return await self.ctx.blockConcurrencyWhile(manifest)
+        if urlparse(request.url).path=='/fixturecatalogue':
+            async def catalogue():
+                self.initialize()
+                from database.models import FuturesMarket
+                with self.database.sessions() as session:
+                    template=session.get(FuturesMarket,'BTC_USDT')
+                    for index in range(650):
+                        symbol=f'TEST{index}_USDT'
+                        session.merge(FuturesMarket(symbol=symbol,contract={**template.contract,'symbol':symbol},ticker={**template.ticker,'symbol':symbol},received=time.time()))
+                    session.commit()
+                return Response.json({'fixture':True,'contracts':651})
+            return await self.ctx.blockConcurrencyWhile(catalogue)
         if urlparse(request.url).path=='/fixturequotes':
             async def fixture():
                 self.initialize()
